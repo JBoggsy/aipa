@@ -11,3 +11,8 @@ wheels/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# API keys and secrets
+*.env
+.env.local
+secrets.json
