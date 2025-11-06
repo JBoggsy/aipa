@@ -1,0 +1,9 @@
+**Current Time & Date:** {timestamp}
+
+**User Location:** {location}
+
+**Context**:
+
+{user_context}
+
+Considering the current time, the user's location, and the user's context, identify the actions you should take at the current moment. Identify only immediately-actionable items, rather than tasks to complete at a later time. Reply with a newline-separated list of LLM prompts for yourself, one per action you need to take.

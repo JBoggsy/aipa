@@ -1,0 +1,10 @@
+**Time:** {current_time}
+
+**Current Weather:**
+
+{current_weather}
+
+**Daily Weather:**
+{daily_weather}
+
+Write a 1-2 paragraph morning weather report for today. Include a description of the current weather and a brief summary of the day's forecast.
