@@ -57,12 +57,8 @@ class WeatherAgent(Agent):
         weather_data = response.json()
         weather_data = self.post_process_weather_data(weather_data)
         return weather_data
-    
-    def gen_morning_report(self) -> str:
-        geolocation = get_geolocation()
-        lat = geolocation["lat"]
-        long = geolocation["lng"]
 
+    def gen_morning_report(self, lat: float, long: float) -> str:
         weather_data = self.get_weather_data(lat, long)
         current_weather = json.dumps(weather_data["current"], indent=2)
         daily_weather_data = json.dumps(weather_data["daily"][0], indent=2)

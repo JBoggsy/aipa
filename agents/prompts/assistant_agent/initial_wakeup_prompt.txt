@@ -4,4 +4,4 @@ It is {current_time} on {current_date}. The weather at {location} is {weather_de
 
 {daily_summary}
 
-Write a friendly morning wakeup which prepares me for the day. Mention the time and weather, one or two concise highlights from my schedule, and include an inspirational quote to start the week off right.
+Write a friendly morning wakeup message which prepares me for the day. Mention the time and weather, one or two concise highlights from my schedule, and include an inspirational quote to start the week off right. The tone should be conversational; the message will be spoken aloud rather than read.
