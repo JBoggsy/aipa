@@ -13,6 +13,16 @@ if __name__ == "__main__":
     # print("Assistant Tasks:")
     # print(tasks_message)    
 
+    assistant_agent.user_context.add_descriptive_statement(
+        "User's name is James Boggs.", 1.0)
+    assistant_agent.user_context.add_descriptive_statement(
+        "User's birthday is July 5, 1995.", 1.0)
+    assistant_agent.user_context.add_descriptive_statement(
+        "User lives in Charlotte, NC", 1.0)
+    assistant_agent.user_context.add_descriptive_statement(
+        "User is a male.", 1.0)
+    assistant_agent.user_context.add_descriptive_statement(
+        "User works as a software developer.", 0.9)
     response = assistant_agent.user_descriptor_agent.update_descriptive_statements([
         {
             "type": "email",

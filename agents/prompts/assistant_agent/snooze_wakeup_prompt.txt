@@ -1,7 +1,7 @@
-It is {current_time} on {current_date}. The weather at {location} is {weather_description}. 
+It is {{ current_time }} on {{ current_date }}. The weather at {{ location }} is {{ weather_description }}. 
 
 **Summary of Daily Events and Tasks:**
 
-{daily_summary}
+{{ daily_summary }}
 
-My requested wakeup time was {wakeup_time}, but I have snoozed {snooze_count} times. Write an appropriately insistent wakeup message which urges me to get and and prepares me for the day. Highlight the current time and when I was meant to wake up and one or two concise highlights from my schedule. The tone should be friendly but firm.
+My requested wakeup time was {{ wakeup_time }}, but I have snoozed {{ snooze_count }} times. Write an appropriately insistent wakeup message which urges me to get and and prepares me for the day. Highlight the current time and when I was meant to wake up and one or two concise highlights from my schedule. The tone should be friendly but firm.

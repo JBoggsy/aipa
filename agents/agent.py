@@ -4,7 +4,7 @@ import torch
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from agents.prompt_set import PromptSet, Prompt
+from agents.prompt import PromptSet, Prompt
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

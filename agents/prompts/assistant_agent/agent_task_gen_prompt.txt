@@ -1,9 +1,9 @@
-**Current Time & Date:** {timestamp}
+**Current Time & Date:** {{ timestamp }}
 
-**User Location:** {location}
+**User Location:** {{ location }}
 
 **Context**:
 
-{user_context}
+{{ user_context }}
 
 Considering the current time, the user's location, and the user's context, identify the single most-pressing action you should take at the current moment. Identify only an immediately-actionable item. 

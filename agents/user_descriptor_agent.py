@@ -35,7 +35,7 @@ class UserDescriptorAgent(Agent):
                                                 "temperature": 0.7,
                                                 "do_sample": True,
                                                 "num_beams": 5,
-                                                "repetition_penalty": 0.5
+                                                "repetition_penalty": 1.5
                                           })
         return response
     

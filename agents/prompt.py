@@ -1,12 +1,14 @@
 from pathlib import Path
+from jinja2 import Template
 
 
 class Prompt:
     def __init__(self, prompt_str: str):
         self.prompt_str = prompt_str
+        self.template = Template(prompt_str)
 
     def __call__(self,**kwargs) -> str:
-        return self.prompt_str.format(**kwargs)
+        return self.template.render(**kwargs)
     
     def __str__(self) -> str:
         return self.prompt_str
