@@ -93,7 +93,12 @@ class Agent:
             return thinking, rest
         return "", response
 
-    def generate_response(self, messages: list, max_length: int = 2048, tool_use=True, think=True) -> str:
+    def generate_response(self, 
+                          messages: list, 
+                          max_length: int = 2048, 
+                          tool_use=True, 
+                          think=True,
+                          gen_kwargs={}) -> str:
         text = self.tokenizer.apply_chat_template(
             messages,
             add_generation_prompt=True,
@@ -103,6 +108,8 @@ class Agent:
         )
 
         model_inputs = self.tokenizer([text], return_tensors="pt").to(DEVICE)
-        output_tokens = self.model.generate(**model_inputs, max_new_tokens=32768)[0]
+        output_tokens = self.model.generate(**model_inputs, 
+                                            max_new_tokens=max_length,
+                                            **gen_kwargs)[0]
         response_tokens = output_tokens[len(model_inputs.input_ids[0]):]
         return self.tokenizer.decode(response_tokens, skip_special_tokens=True)

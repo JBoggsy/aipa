@@ -2,6 +2,9 @@ from datetime import datetime
 
 from agents.agent import Agent
 from agents.weather_agent import WeatherAgent
+from agents.email_sorter_agent import EmailSorterAgent
+from agents.user_descriptor_agent import UserDescriptorAgent
+from email_handling.gmail_handler import GmailHandler
 from user import UserContext
 from utils import get_geolocation
 
@@ -12,6 +15,12 @@ class AssistantAgent(Agent):
         self.user_context = UserContext()
 
         self.weather_agent = WeatherAgent(self.model_name, "agents/prompts/weather_agent")
+
+        self.email_sorter_agent = EmailSorterAgent(self.model_name)
+        self.gmail_handler = GmailHandler()
+
+        self.user_descriptor_agent = UserDescriptorAgent(self.model_name, self.user_context)
+
         self.add_tool(
             name="gen_morning_wakeup",
             description="Activates a wakeup alarm on the user's device and then generates and reads aloud a morning wakeup message. The wakeup message prepares the user for the day ahead.",
@@ -39,7 +48,10 @@ class AssistantAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        response = self.generate_response(messages, max_length=2048, tool_use=True, think=False)
+        response = self.generate_response(messages, 
+                                          max_length=4096, 
+                                          tool_use=True, 
+                                          think=False)
         thinking, response = self.split_thinking(response)
         tool_calls, response = self.parse_tool_calls(response)
 

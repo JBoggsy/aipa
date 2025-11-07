@@ -1,0 +1,7 @@
+Read and categorize the following email, responding ONLY with the category name.
+
+From: {sender}
+To: {recipients}
+Subject: {subject}
+Body:
+{body}
