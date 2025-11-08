@@ -7,6 +7,18 @@ from utils import get_geolocation
 
 
 class WeatherAgent(Agent):
+    def __init__(self, model_name, prompt_dir="agents/prompts/weather_agent"):
+        super().__init__(model_name, prompt_dir)
+
+    def agent_as_tool(self) -> dict:
+        schema = {
+            "name": "get_weather_report",
+            "description": self.gen_morning_report.__doc__,    
+            "parameters": {}
+        }
+        tool_func = self.gen_morning_report
+        return schema, tool_func
+
     def post_process_weather_data(self, weather_data):
         """
         Convert UNIX timestamps in the weather data to human-readable datetime strings.
@@ -58,7 +70,17 @@ class WeatherAgent(Agent):
         weather_data = self.post_process_weather_data(weather_data)
         return weather_data
 
-    def gen_morning_report(self, lat: float, long: float) -> str:
+    def gen_morning_report(self: 'WeatherAgent') -> str:
+        """
+        Generate a morning weather report based on current and daily weather data.
+
+        Returns:
+            str: The generated morning weather report.
+        """
+        geolocation = get_geolocation()
+        lat = geolocation["lat"]
+        long = geolocation["lng"]
+
         weather_data = self.get_weather_data(lat, long)
         current_weather = json.dumps(weather_data["current"], indent=2)
         daily_weather_data = json.dumps(weather_data["daily"][0], indent=2)
@@ -73,6 +95,5 @@ class WeatherAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        response = self.generate_response(messages)
-        thinking, response = self.split_thinking(response)
+        thinking, response = self.generate_response(messages)
         return response

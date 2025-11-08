@@ -1,3 +1,4 @@
+from agents.agent import Agent
 from agents.weather_agent import WeatherAgent
 from agents.assistant_agent import AssistantAgent
 
@@ -9,9 +10,9 @@ if __name__ == "__main__":
     assistant_agent.user_context.add_context("USER PREFERENCE: User prefers coffee in the morning.")
     assistant_agent.user_context.add_context("SCHEDULE: User will be going to the gym at 2:00 PM. Reminder has been set.")
 
-    # tasks_message = assistant_agent.gen_assistant_tasks()
-    # print("Assistant Tasks:")
-    # print(tasks_message)    
+    tasks_message = assistant_agent.gen_assistant_tasks()
+    print("Assistant Tasks:")
+    print(tasks_message)    
 
     assistant_agent.user_context.add_descriptive_statement(
         "User's name is James Boggs.", 1.0)
@@ -53,5 +54,3 @@ if __name__ == "__main__":
     ])
     print("Updated Descriptive Statements:")
     print(response)
-    for statement in assistant_agent.user_context.descriptive_statements:
-        print(f"ID: {statement.id}\nContent: {statement.content}\nConfidence: {statement.confidence}\n")

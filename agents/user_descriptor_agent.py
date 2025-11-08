@@ -27,16 +27,9 @@ class UserDescriptorAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        response = self.generate_response(messages,
-                                          tool_use=False,
-                                          think=True,
-                                          max_length=4096,
-                                          gen_kwargs={
-                                                "temperature": 0.7,
-                                                "do_sample": True,
-                                                "num_beams": 5,
-                                                "repetition_penalty": 1.5
-                                          })
+        thinking, response = self.generate_response(messages,
+                                                    max_length=4096,
+                                                    reasoning=False)
         return response
     
     def _format_information_sources_block(self, information_sources: list[dict]) -> str:

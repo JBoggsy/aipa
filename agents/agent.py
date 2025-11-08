@@ -2,40 +2,23 @@ import json
 import re
 import torch
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
 from agents.prompt import PromptSet, Prompt
-
+from models import HFAutoModel
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Agent:
-    LOADED_TOKENIZERS = {}
-    LOADED_MODELS = {}
+    AGENT_HUB = {}
 
     def __init__(self, model_name: str, prompt_dir: str = "agents/prompts"):
         self.model_name = model_name
+        self.model = HFAutoModel(model_name)
         self.prompt_set = PromptSet(prompt_dir)
         self.system_prompt = self.prompt_set["system_prompt"]()
         self.secrets = self.load_secrets()
         self.tools = {}
-
-    @property
-    def tokenizer(self):
-        if self.model_name not in Agent.LOADED_TOKENIZERS:
-            Agent.LOADED_TOKENIZERS[self.model_name] = AutoTokenizer.from_pretrained(self.model_name)
-        return Agent.LOADED_TOKENIZERS[self.model_name]
-    
-    @property
-    def model(self):
-        if self.model_name not in Agent.LOADED_MODELS:
-            Agent.LOADED_MODELS[self.model_name] = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=torch.float16,
-                device_map=DEVICE
-            )
-        return Agent.LOADED_MODELS[self.model_name]
+        self.register_agent(self.__class__.__name__)
 
     @property
     def tool_dicts(self) -> list:
@@ -44,16 +27,9 @@ class Agent:
     def load_secrets(self) -> dict:
         with open("config/secrets.json", "r") as file:
             return json.load(file)
-
-    def add_tool(self, name: str, description: str, parameters: dict, function: callable):
-        self.tools[name] = {
-            "tool_dict": {
-                "name": name,
-                "description": description,
-                "parameters": parameters
-            },
-            "function": function
-        }
+        
+    def register_agent(self, agent_name: str):
+        Agent.AGENT_HUB[agent_name] = self
 
     def make_simple_messages(self, user_prompt: str) -> list:
         return [
@@ -61,55 +37,22 @@ class Agent:
             {"role": "user", "content": user_prompt}
         ]
     
-    def parse_tool_calls(self, response: str) -> list:
-        tool_call_pattern = re.compile(r"\<tool_call\>(.*?)\<\/tool_call\>", re.DOTALL)
-        matches = tool_call_pattern.findall(response)
-        tool_calls = []
-        for match in matches:
-            try:
-                tool_call = json.loads(match.strip())
-                tool_calls.append(tool_call)
-            except json.JSONDecodeError:
-                continue
-
-        response = tool_call_pattern.sub("", response).strip()
-        return tool_calls, response
-    
-    def execute_tool_call(self, tool_call: dict) -> str:
-        tool_name = tool_call["name"]
-        parameters = tool_call["arguments"]
-        if tool_name in self.tools:
-            tool_function = self.tools[tool_name]["function"]
-            return tool_function(**parameters)
-        else:
-            raise ValueError(f"Tool '{tool_name}' not found.")
-
-    def split_thinking(self, response: str) -> tuple[str, str]:
-        thinking_pattern = re.compile(r"\<think\>(.*?)\<\/think\>", re.DOTALL)
-        match = thinking_pattern.search(response)
-        if match:
-            thinking = match.group(1).strip()
-            rest = thinking_pattern.sub("", response).strip()
-            return thinking, rest
-        return "", response
+    def add_tool(self, tool_schema: dict, tool_func: callable):
+        self.model.add_tool(tool_schema, tool_func)
 
     def generate_response(self, 
                           messages: list, 
-                          max_length: int = 2048, 
-                          tool_use=True, 
-                          think=True,
-                          gen_kwargs={}) -> str:
-        text = self.tokenizer.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=False,
-            xml_tools=self.tool_dicts if tool_use else None,
-            enable_thinking=think
-        )
+                          max_length: int = 2048,
+                          reasoning: bool = False) -> tuple[str, str]:
+        """
+        Generates a response from the model based on the provided messages.
 
-        model_inputs = self.tokenizer([text], return_tensors="pt").to(DEVICE)
-        output_tokens = self.model.generate(**model_inputs, 
-                                            max_new_tokens=max_length,
-                                            **gen_kwargs)[0]
-        response_tokens = output_tokens[len(model_inputs.input_ids[0]):]
-        return self.tokenizer.decode(response_tokens, skip_special_tokens=True)
+        Args:
+            messages (list): A list of message dictionaries containing 'role' and 'content'.
+            max_length (int, optional): The maximum length of the generated response. Defaults to 2048.
+            reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to False
+
+        Returns:
+            tuple[str, str]: A tuple containing the thinking process and the final response.
+        """
+        return self.model.generate(messages, max_length=max_length, reasoning=reasoning)
