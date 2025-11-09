@@ -3,16 +3,17 @@ import json
 import requests
 
 from agents.agent import Agent
+from models.model import Model
 from utils import get_geolocation
 
 
 class WeatherAgent(Agent):
-    def __init__(self, model_name, prompt_dir="agents/prompts/weather_agent"):
-        super().__init__(model_name, prompt_dir)
+    def __init__(self, model: Model, prompt_dir="agents/prompts/weather_agent"):
+        super().__init__(model, prompt_dir)
 
     def agent_as_tool(self) -> dict:
         schema = {
-            "name": "get_weather_report",
+            "name": "gen_morning_report",
             "description": self.gen_morning_report.__doc__,    
             "parameters": {}
         }
@@ -95,5 +96,5 @@ class WeatherAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response = self.generate_response(messages)
+        thinking, response, tool_results = self.generate_response(messages)
         return response

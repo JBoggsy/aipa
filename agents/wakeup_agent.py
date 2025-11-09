@@ -1,12 +1,13 @@
 from datetime import datetime
 
 from agents.agent import Agent
+from models.model import Model
 from utils import get_geolocation
 
 
 class WakeupAgent(Agent):
-    def __init__(self, model_name, prompt_dir="agents/prompts/wakeup_agent"):
-        super().__init__(model_name, prompt_dir)
+    def __init__(self, model: Model, prompt_dir="agents/prompts/wakeup_agent"):
+        super().__init__(model, prompt_dir)
 
     def agent_as_tool(self) -> dict:
         schema = {
@@ -61,5 +62,5 @@ class WakeupAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response = self.generate_response(messages, max_length=2048, reasoning=False)
+        thinking, response, tool_results = self.generate_response(messages, max_length=2048, reasoning=True)
         return response

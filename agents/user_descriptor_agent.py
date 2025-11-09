@@ -1,10 +1,13 @@
+import json
 from agents.agent import Agent
+from models.model import Model
+from models.ollama_model import OllamaModel
 from user.user_context import UserContext, DescriptiveStatement
 
 
 class UserDescriptorAgent(Agent):
-    def __init__(self, model_name: str, user_context: UserContext):
-        super().__init__(model_name, prompt_dir="agents/prompts/user_descriptor_agent")
+    def __init__(self, model: Model, user_context: UserContext):
+        super().__init__(model, prompt_dir="agents/prompts/user_descriptor_agent")
         self.description_summary_prompt = self.prompt_set["description_summary_prompt"]
         self.user_context = user_context
 
@@ -27,10 +30,11 @@ class UserDescriptorAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response = self.generate_response(messages,
+        thinking, response, tool_results = self.generate_response(messages,
                                                     max_length=4096,
                                                     reasoning=False)
-        return response
+        descriptive_statements = json.loads(response)
+        return descriptive_statements
     
     def _format_information_sources_block(self, information_sources: list[dict]) -> str:
         sources_block = ""

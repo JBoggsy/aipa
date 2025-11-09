@@ -6,4 +6,4 @@
 
 {{ user_context }}
 
-Considering the current time, the user's location, and the user's context, identify the single most-pressing action you should take at the current moment. Identify only an immediately-actionable item. 
+Considering the current time, the user's location, and the user's context, identify the single most-pressing action you should take at the current moment. Identify only an immediately-actionable item. Respond with your reasoning and, if appropriate, one or more tool calls. 

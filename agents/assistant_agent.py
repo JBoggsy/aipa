@@ -6,25 +6,28 @@ from agents.user_descriptor_agent import UserDescriptorAgent
 from agents.wakeup_agent import WakeupAgent
 from agents.weather_agent import WeatherAgent
 from email_handling.gmail_handler import GmailHandler
+from models import Model, HFAutoModel, OllamaModel
 from user import UserContext
 from utils import get_geolocation
 
 
 class AssistantAgent(Agent):
-    def __init__(self, model_name, prompt_dir = "agents/prompts/assistant_agent"):
-        super().__init__(model_name, prompt_dir)
+    def __init__(self, model: Model, prompt_dir = "agents/prompts/assistant_agent"):
+        super().__init__(model, prompt_dir)
         self.user_context = UserContext()
         self.gmail_handler = GmailHandler()
 
-        self.email_sorter_agent = EmailSorterAgent(self.model_name)
-        self.wakeup_agent = WakeupAgent(self.model_name)
-        self.weather_agent = WeatherAgent(self.model_name)
-        self.user_descriptor_agent = UserDescriptorAgent(self.model_name, self.user_context)
+        self.email_sorter_agent = EmailSorterAgent(OllamaModel("gpt-oss:20b"))
+        self.wakeup_agent = WakeupAgent(OllamaModel("gpt-oss:20b"))
+        self.weather_agent = WeatherAgent(OllamaModel("gpt-oss:20b"))
+
+        user_descriptor_model = OllamaModel("gpt-oss:20b", format='json')
+        self.user_descriptor_agent = UserDescriptorAgent(user_descriptor_model, self.user_context)
 
         self.add_tool(*self.weather_agent.agent_as_tool())
         self.add_tool(*self.wakeup_agent.agent_as_tool())
         self.add_tool({
-            "name": "generate_daily_summary",
+            "name": "gen_daily_summary",
             "description": self.gen_daily_summary.__doc__,
             "parameters": {}
         }, self.gen_daily_summary)
@@ -50,9 +53,10 @@ class AssistantAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response = self.generate_response(messages, 
-                                          max_length=4096,
-                                          reasoning=False)
+        thinking, response, tool_results = self.generate_response(messages, 
+                                           max_length=4096,
+                                           reasoning=True)
+
         return response
 
     def gen_daily_summary(self: 'AssistantAgent') -> str:

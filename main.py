@@ -1,10 +1,13 @@
+from models import HFAutoModel, OllamaModel
+
 from agents.agent import Agent
 from agents.weather_agent import WeatherAgent
 from agents.assistant_agent import AssistantAgent
 
 
 if __name__ == "__main__": 
-    assistant_agent = AssistantAgent("HuggingFaceTB/SmolLM3-3B", "agents/prompts/assistant_agent")
+    assistant_model = OllamaModel("gpt-oss:20b")
+    assistant_agent = AssistantAgent(assistant_model, "agents/prompts/assistant_agent")
     assistant_agent.user_context.add_context("RECURRING INSTRUCTION: Wake me up at 7:00 AM every weekday.")
     assistant_agent.user_context.add_context("SCHEDULE: Video call at 10:00 AM about project X. Remidnder has been set.")
     assistant_agent.user_context.add_context("USER PREFERENCE: User prefers coffee in the morning.")
@@ -28,7 +31,7 @@ if __name__ == "__main__":
         {
             "type": "email",
             "timestamp": "2024-06-01 09:15 AM",
-            "content": "Received an email from Alice about the upcoming project deadline."
+            "content": "Message from Alice Jenkins in accounting: timesheets are due in a week."
         },
         {
             "type": "calendar_event",

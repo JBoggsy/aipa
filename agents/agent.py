@@ -1,9 +1,8 @@
 import json
-import re
 import torch
 
-from agents.prompt import PromptSet, Prompt
-from models import HFAutoModel
+from agents.prompt import PromptSet
+from models import Model
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -11,9 +10,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 class Agent:
     AGENT_HUB = {}
 
-    def __init__(self, model_name: str, prompt_dir: str = "agents/prompts"):
-        self.model_name = model_name
-        self.model = HFAutoModel(model_name)
+    def __init__(self, model: Model, prompt_dir: str = "agents/prompts"):
+        self.model = model
         self.prompt_set = PromptSet(prompt_dir)
         self.system_prompt = self.prompt_set["system_prompt"]()
         self.secrets = self.load_secrets()
@@ -43,7 +41,7 @@ class Agent:
     def generate_response(self, 
                           messages: list, 
                           max_length: int = 2048,
-                          reasoning: bool = False) -> tuple[str, str]:
+                          reasoning: bool = False) -> tuple[str, str, dict]:
         """
         Generates a response from the model based on the provided messages.
 

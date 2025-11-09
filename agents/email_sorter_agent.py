@@ -1,13 +1,14 @@
 from agents.agent import Agent
 from email_handling.email_objects import EmailThread
+from models.model import Model
 
 
 VALID_CATEGORIES = ["ADVERTISEMENT", "EMAIL_BLAST", "BUSINESS", "PERSONAL"]
 
 
 class EmailSorterAgent(Agent):
-    def __init__(self, model_name: str):
-        super().__init__(model_name, prompt_dir="agents/prompts/email_sorter_agent")
+    def __init__(self, model: Model):
+        super().__init__(model, prompt_dir="agents/prompts/email_sorter_agent")
         self.email_sort_prompt = self.prompt_set["email_sort_prompt"]
 
     def sort_threads(self, threads: list[EmailThread]) -> list[str]:
