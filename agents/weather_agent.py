@@ -96,5 +96,5 @@ class WeatherAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response, tool_results = self.generate_response(messages)
-        return response
+        message = self.model.generate(messages)
+        return message.content

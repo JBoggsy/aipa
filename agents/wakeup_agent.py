@@ -62,5 +62,5 @@ class WakeupAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response, tool_results = self.generate_response(messages, max_length=2048, reasoning=True)
-        return response
+        message = self.model.generate(messages, max_length=2048, reasoning=True)
+        return message.content

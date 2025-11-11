@@ -5,6 +5,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from models.model import Model
+from messages import Message
 
 
 class HFAutoModel(Model):
@@ -45,15 +46,6 @@ class HFAutoModel(Model):
         response = tool_call_pattern.sub("", response).strip()
         return tool_calls, response
     
-    def execute_tool_call(self, tool_call: dict) -> str:
-        tool_name = tool_call["name"]
-        parameters = tool_call["arguments"]
-        if tool_name in self.tools:
-            tool_function = self.tools[tool_name]["function"]
-            return tool_function(**parameters)
-        else:
-            raise ValueError(f"Tool '{tool_name}' not found.")
-
     def split_thinking(self, response: str) -> tuple[str, str]:
         thinking_pattern = re.compile(r"\<think\>(.*?)\<\/think\>", re.DOTALL)
         match = thinking_pattern.search(response)
@@ -67,7 +59,7 @@ class HFAutoModel(Model):
                  messages: list, 
                  max_length: int = 2048,
                  temperature: float = 0.7,
-                 reasoning: bool = False) -> tuple[str, str, dict]:
+                 reasoning: bool = False) -> Message:
         """
         Generates a response from the model based on the provided messages.
 
@@ -79,7 +71,7 @@ class HFAutoModel(Model):
             False
 
         Returns:
-            tuple[str, str, dict]: A tuple containing the thinking process, the final response, and tool calls.
+            Message: A Message object containing the response, thinking process, and tool calls.
         """
         text = self.tokenizer.apply_chat_template(
             messages,
@@ -98,4 +90,9 @@ class HFAutoModel(Model):
         response = self.tokenizer.decode(response_tokens, skip_special_tokens=True)
         thinking, response = self.split_thinking(response)
         tool_calls, response = self.parse_tool_calls(response)
-        return thinking, response.strip(), tool_calls
+        return Message(
+            role="assistant",
+            content=response.strip(),
+            thinking=thinking,
+            tool_calls=tool_calls if tool_calls else None
+        )

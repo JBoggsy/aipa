@@ -5,8 +5,10 @@ from agents.email_sorter_agent import EmailSorterAgent
 from agents.user_descriptor_agent import UserDescriptorAgent
 from agents.wakeup_agent import WakeupAgent
 from agents.weather_agent import WeatherAgent
+
 from email_handling.gmail_handler import GmailHandler
 from models import Model, HFAutoModel, OllamaModel
+from tasks import Task
 from user import UserContext
 from utils import get_geolocation
 
@@ -31,6 +33,7 @@ class AssistantAgent(Agent):
             "description": self.gen_daily_summary.__doc__,
             "parameters": {}
         }, self.gen_daily_summary)
+        self.add_tool(Task.create_task_tool_schema(), Task.create_task)
 
     def gen_assistant_tasks(self) -> str:
         """
@@ -53,11 +56,11 @@ class AssistantAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response, tool_results = self.generate_response(messages, 
-                                           max_length=4096,
-                                           reasoning=True)
+        message = self.model.generate(messages, 
+                                      max_length=4096,
+                                      reasoning=True)
 
-        return response
+        return message.content
 
     def gen_daily_summary(self: 'AssistantAgent') -> str:
         """

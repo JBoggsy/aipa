@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 import torch
 
+from messages import Message
+
 
 class Model(ABC):
     def __init__(self, device: str | None = None):
@@ -15,7 +17,8 @@ class Model(ABC):
     @abstractmethod
     def generate(self, messages: list,
                  max_length: int = 2048,
-                 reasoning: bool = False) -> str:
+                 temperature: float = 0.8,
+                 reasoning: bool = False) -> Message:
         raise NotImplementedError("Subclasses must implement this method.")
     
     @abstractmethod

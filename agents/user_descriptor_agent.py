@@ -30,10 +30,11 @@ class UserDescriptorAgent(Agent):
         )
 
         messages = self.make_simple_messages(user_prompt)
-        thinking, response, tool_results = self.generate_response(messages,
-                                                    max_length=4096,
-                                                    reasoning=False)
-        descriptive_statements = json.loads(response)
+        message = self.model.generate(messages,
+                                      max_length=4096,
+                                      reasoning=False)
+        print("User Descriptor Agent Response:\n", message.content)
+        descriptive_statements = json.loads(message.content)
         return descriptive_statements
     
     def _format_information_sources_block(self, information_sources: list[dict]) -> str:

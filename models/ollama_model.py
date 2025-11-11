@@ -1,22 +1,18 @@
-
+from ollama import chat
 
 from models.model import Model
+from messages import Message
 
 
 class OllamaModel(Model):
     def __init__(self, model_name: str, **model_kwargs):
         super().__init__()
-        self.model = ChatOllama(
-            model=model_name,
-            validate_model_on_init=True,
-            configurable_fields="any",
-            **model_kwargs
-        )
+        self.model_name = model_name
 
     def generate(self, messages: list,
                  max_length: int = 2048,
                  temperature: float = 0.8,
-                 reasoning: bool = False) -> tuple[str, str, dict]:
+                 reasoning: bool = False) -> Message:
         """
         Generates a response from the model based on the provided messages.
 
@@ -28,44 +24,32 @@ class OllamaModel(Model):
             False
 
         Returns:
-            tuple[str, str, dict]: A tuple containing the thinking process, the final response, and tool calls.
+            Message: A Message object containing the response, thinking process, and tool calls.
         """
-        response_data = self.model.invoke(
-            messages,
-            config={
-                "configurable": {
-                    "num_predict": max_length,
-                    "temperature": temperature,
-                    "reasoning": reasoning
-                }
-            }
+        response_data = chat(
+            model=self.model_name,
+            messages=messages,
+            options={
+                "num_predict": max_length,
+                "temperature": temperature,
+            },
+            think=reasoning,
+            tools=[tool["function"] for tool in self.tools.values()]
         )
-        
-        response = response_data.content
-        thinking = response_data.additional_kwargs.get("reasoning_content", "")
-        
-        tool_results = {}
-        if hasattr(response_data, "tool_calls"):
-            tool_calls = response_data.tool_calls
-        else:
-            tool_calls = []
-        for tool_call in tool_calls:
-            tool_result = self.execute_tool_call(tool_call)
-            tool_results[tool_call["name"]] = tool_result
-        return thinking, response.strip(), tool_results
 
-    def execute_tool_call(self, tool_call: dict) -> str:
-        tool_name = tool_call["name"]
-        parameters = tool_call["args"]
-        if tool_name in self.tools:
-            tool_function = self.tools[tool_name]["function"]
-            return tool_function(**parameters)
-        else:
-            raise ValueError(f"Tool '{tool_name}' not found.")
-    
+        message = response_data.message
+        return Message(
+            role=message.role,
+            content=message.content if message.content else "",
+            thinking=message.thinking if hasattr(message, 'thinking') and message.thinking else "",
+            tool_calls=message.tool_calls if message.tool_calls else None
+        )
+
+
+
     def add_tool(self, tool_schema: dict, tool_function: callable):
-        self.tools[tool_schema["name"]] = {
+        tool_name = tool_schema["name"]
+        self.tools[tool_name] = {
             "tool_dict": tool_schema,
             "function": tool_function
         }
-        self.model = self.model.bind_tools([tool["function"] for tool in self.tools.values()])

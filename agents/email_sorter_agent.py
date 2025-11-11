@@ -41,10 +41,10 @@ class EmailSorterAgent(Agent):
             
             # Generate messages and get LLM response
             messages = self.make_simple_messages(user_prompt)
-            response = self.generate_response(messages, tool_use=False, think=False)
+            message = self.model.generate(messages, reasoning=False)
             
             # Parse and validate the category
-            category = self._parse_category(response)
+            category = self._parse_category(message.content)
             categories.append(category)
         
         return categories
