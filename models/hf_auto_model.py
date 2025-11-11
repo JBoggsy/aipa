@@ -59,7 +59,8 @@ class HFAutoModel(Model):
                  messages: list, 
                  max_length: int = 2048,
                  temperature: float = 0.7,
-                 reasoning: bool = False) -> Message:
+                 reasoning: bool = False,
+                 format: str | None = None) -> Message:
         """
         Generates a response from the model based on the provided messages.
 
@@ -69,10 +70,21 @@ class HFAutoModel(Model):
             temperature (float, optional): The sampling temperature for generation. Defaults to 0.8.
             reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to
             False
+            format (str | None, optional): The output format for the response. Currently supports
+            "json" for JSON-formatted output. Defaults to None.
 
         Returns:
             Message: A Message object containing the response, thinking process, and tool calls.
         """
+        # Add JSON formatting instruction if requested
+        if format == "json":
+            # Add JSON formatting instruction to the last user message
+            modified_messages = messages.copy()
+            if modified_messages and modified_messages[-1]["role"] == "user":
+                modified_messages[-1] = modified_messages[-1].copy()
+                modified_messages[-1]["content"] += "\n\nPlease respond with valid JSON only."
+            messages = modified_messages
+        
         text = self.tokenizer.apply_chat_template(
             messages,
             add_generation_prompt=True,

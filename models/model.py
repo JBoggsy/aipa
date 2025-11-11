@@ -18,7 +18,8 @@ class Model(ABC):
     def generate(self, messages: list,
                  max_length: int = 2048,
                  temperature: float = 0.8,
-                 reasoning: bool = False) -> Message:
+                 reasoning: bool = False,
+                 format: str | None = None) -> Message:
         raise NotImplementedError("Subclasses must implement this method.")
     
     @abstractmethod

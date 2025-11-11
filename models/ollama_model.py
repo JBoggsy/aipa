@@ -12,7 +12,8 @@ class OllamaModel(Model):
     def generate(self, messages: list,
                  max_length: int = 2048,
                  temperature: float = 0.8,
-                 reasoning: bool = False) -> Message:
+                 reasoning: bool = False,
+                 format: str | None = None) -> Message:
         """
         Generates a response from the model based on the provided messages.
 
@@ -22,20 +23,28 @@ class OllamaModel(Model):
             temperature (float, optional): The sampling temperature for generation. Defaults to 0.8.
             reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to
             False
+            format (str | None, optional): The output format for the response. Currently supports
+            "json" for JSON-formatted output. Defaults to None.
 
         Returns:
             Message: A Message object containing the response, thinking process, and tool calls.
         """
-        response_data = chat(
-            model=self.model_name,
-            messages=messages,
-            options={
+        chat_kwargs = {
+            "model": self.model_name,
+            "messages": messages,
+            "options": {
                 "num_predict": max_length,
                 "temperature": temperature,
             },
-            think=reasoning,
-            tools=[tool["function"] for tool in self.tools.values()]
-        )
+            "think": reasoning,
+            "tools": [tool["function"] for tool in self.tools.values()]
+        }
+        
+        # Add format parameter if specified
+        if format is not None:
+            chat_kwargs["format"] = format
+        
+        response_data = chat(**chat_kwargs)
 
         message = response_data.message
         return Message(

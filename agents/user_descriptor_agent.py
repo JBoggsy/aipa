@@ -32,8 +32,8 @@ class UserDescriptorAgent(Agent):
         messages = self.make_simple_messages(user_prompt)
         message = self.model.generate(messages,
                                       max_length=4096,
-                                      reasoning=False)
-        print("User Descriptor Agent Response:\n", message.content)
+                                      reasoning=True,
+                                      format="json")
         descriptive_statements = json.loads(message.content)
         return descriptive_statements
     
