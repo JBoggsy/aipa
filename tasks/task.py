@@ -32,6 +32,7 @@ class Task:
         Returns:
             Task: A new Task instance with the specified goal.
         """
+        print(f"Creating new task with goal: {goal}")
         return Task(goal)
     
     @staticmethod

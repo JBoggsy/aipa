@@ -1,7 +1,7 @@
 from ollama import chat
 
 from models.model import Model
-from messages import Message
+from messages import Message, ToolCall
 
 
 class OllamaModel(Model):
@@ -47,14 +47,54 @@ class OllamaModel(Model):
         response_data = chat(**chat_kwargs)
 
         message = response_data.message
+        tool_calls = self.parse_tool_calls(message.tool_calls)
+        
         return Message(
             role=message.role,
             content=message.content if message.content else "",
             thinking=message.thinking if hasattr(message, 'thinking') and message.thinking else "",
-            tool_calls=message.tool_calls if message.tool_calls else None
+            tool_calls=tool_calls
         )
 
-
+    def parse_tool_calls(self, raw_tool_calls) -> list[ToolCall] | None:
+        """
+        Parse tool calls from Ollama's raw response format into ToolCall instances.
+        
+        Args:
+            raw_tool_calls: The raw tool call data from Ollama
+            
+        Returns:
+            list[ToolCall] | None: A list of ToolCall instances, or None if no tool calls
+        """
+        if not raw_tool_calls:
+            return None
+            
+        tool_calls = []
+        for tc in raw_tool_calls:
+            # Ollama tool calls have 'function' attribute with 'name' and 'arguments'
+            if hasattr(tc, 'function'):
+                tool_calls.append(ToolCall(
+                    name=tc.function.name,
+                    arguments=tc.function.arguments,
+                    id=tc.id if hasattr(tc, 'id') else None
+                ))
+            # Handle dict format if Ollama returns it that way
+            elif isinstance(tc, dict):
+                if 'function' in tc:
+                    tool_calls.append(ToolCall(
+                        name=tc['function']['name'],
+                        arguments=tc['function']['arguments'],
+                        id=tc.get('id')
+                    ))
+                else:
+                    # Fallback for simple dict format
+                    tool_calls.append(ToolCall(
+                        name=tc.get('name', ''),
+                        arguments=tc.get('arguments', {}),
+                        id=tc.get('id')
+                    ))
+        
+        return tool_calls if tool_calls else None
 
     def add_tool(self, tool_schema: dict, tool_function: callable):
         tool_name = tool_schema["name"]

@@ -5,7 +5,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from models.model import Model
-from messages import Message
+from messages import Message, ToolCall
 
 
 class HFAutoModel(Model):
@@ -32,19 +32,58 @@ class HFAutoModel(Model):
             "function": tool_function
         }
 
-    def parse_tool_calls(self, response: str) -> list:
+    def parse_tool_calls(self, raw_tool_calls) -> list[ToolCall] | None:
+        """
+        Parse tool calls from HuggingFace's raw response format into ToolCall instances.
+        
+        For HuggingFace models, raw_tool_calls is expected to be a list of dicts parsed
+        from the model's text output.
+        
+        Args:
+            raw_tool_calls: List of tool call dictionaries or None
+            
+        Returns:
+            list[ToolCall] | None: A list of ToolCall instances, or None if no tool calls
+        """
+        if not raw_tool_calls:
+            return None
+            
+        tool_calls = []
+        for tool_call_dict in raw_tool_calls:
+            try:
+                # Convert dict to ToolCall instance
+                tool_calls.append(ToolCall(
+                    name=tool_call_dict.get('name', ''),
+                    arguments=tool_call_dict.get('arguments', {}),
+                    id=tool_call_dict.get('id')
+                ))
+            except (AttributeError, TypeError):
+                continue
+        
+        return tool_calls if tool_calls else None
+    
+    def extract_tool_calls_from_text(self, response: str) -> tuple[list[dict], str]:
+        """
+        Extract tool calls from the response text and return them as dicts.
+        
+        Args:
+            response (str): The model's response text
+            
+        Returns:
+            tuple[list[dict], str]: A tuple of (list of tool call dicts, cleaned response text)
+        """
         tool_call_pattern = re.compile(r"\<tool_call\>(.*?)\<\/tool_call\>", re.DOTALL)
         matches = tool_call_pattern.findall(response)
-        tool_calls = []
+        tool_call_dicts = []
         for match in matches:
             try:
-                tool_call = json.loads(match.strip())
-                tool_calls.append(tool_call)
+                tool_call_dict = json.loads(match.strip())
+                tool_call_dicts.append(tool_call_dict)
             except json.JSONDecodeError:
                 continue
 
         response = tool_call_pattern.sub("", response).strip()
-        return tool_calls, response
+        return tool_call_dicts, response
     
     def split_thinking(self, response: str) -> tuple[str, str]:
         thinking_pattern = re.compile(r"\<think\>(.*?)\<\/think\>", re.DOTALL)
@@ -101,10 +140,11 @@ class HFAutoModel(Model):
         response_tokens = output_tokens[len(model_inputs.input_ids[0]):]
         response = self.tokenizer.decode(response_tokens, skip_special_tokens=True)
         thinking, response = self.split_thinking(response)
-        tool_calls, response = self.parse_tool_calls(response)
+        tool_call_dicts, response = self.extract_tool_calls_from_text(response)
+        tool_calls = self.parse_tool_calls(tool_call_dicts)
         return Message(
             role="assistant",
             content=response.strip(),
             thinking=thinking,
-            tool_calls=tool_calls if tool_calls else None
+            tool_calls=tool_calls
         )

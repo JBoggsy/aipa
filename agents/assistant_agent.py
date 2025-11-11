@@ -60,6 +60,9 @@ class AssistantAgent(Agent):
                                       max_length=4096,
                                       reasoning=True)
 
+        if message.tool_calls is not None and len(message.tool_calls) > 0:
+            tool_results = self.execute_tool_call(message.tool_calls)
+            print("Tool Results:\n", tool_results)
         return message.content
 
     def gen_daily_summary(self: 'AssistantAgent') -> str:

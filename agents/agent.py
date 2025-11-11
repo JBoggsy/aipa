@@ -3,7 +3,7 @@ import torch
 
 from agents.prompt import PromptSet
 from models import Model
-from messages import Message
+from messages import Message, ToolCall
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -72,21 +72,40 @@ class Agent:
         }
         self.model.add_tool(tool_schema, tool_func)
 
-    def execute_tool_call(self, tool_call: dict) -> str:
+    def execute_tool_call(self, tool_call: ToolCall | list[ToolCall] | dict | list[dict]) -> list:
         """
-        Executes a tool call based on the provided tool call dictionary.
+        Executes one or more tool calls based on the provided tool call(s).
         
         Args:
-            tool_call (dict): A dictionary containing the tool name and arguments. Should be
-            provided by the model's response.
+            tool_call (ToolCall | list[ToolCall] | dict | list[dict]): A ToolCall instance, 
+            dictionary, or list of either containing the tool name and arguments. 
+            Should be provided by the model's response.
 
         Returns:
-            str: The result of the tool function execution.
+            list: A list of results from executing each tool function. Always returns a list,
+            even if only one tool call was provided.
         """
-        tool_name = tool_call["name"]
-        parameters = tool_call["arguments"]
-        if tool_name in self.tools:
-            tool_function = self.tools[tool_name]["function"]
-            return tool_function(**parameters)
+        # Normalize input to always be a list of ToolCall instances
+        if isinstance(tool_call, (ToolCall, dict)):
+            tool_calls = [tool_call]
         else:
-            raise ValueError(f"Tool '{tool_name}' not found.")
+            tool_calls = tool_call
+        
+        results = []
+        for call in tool_calls:
+            # Handle both ToolCall instances and dict format for backward compatibility
+            if isinstance(call, ToolCall):
+                tool_name = call.name
+                parameters = call.arguments
+            else:
+                tool_name = call["name"]
+                parameters = call["arguments"]
+                
+            if tool_name in self.tools:
+                tool_function = self.tools[tool_name]["function"]
+                result = tool_function(**parameters)
+                results.append(result)
+            else:
+                raise ValueError(f"Tool '{tool_name}' not found.")
+        
+        return results
