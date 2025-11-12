@@ -18,3 +18,7 @@ wheels/
 secrets.json
 config/gcloud_oauth_credentials.json
 config/gcloud_oauth_token.json
+
+# Logs
+logs/
+*.log

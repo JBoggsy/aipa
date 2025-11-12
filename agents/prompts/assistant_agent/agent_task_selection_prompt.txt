@@ -14,5 +14,6 @@
 
 Considering the current time, the user's location, the user's context, and your current set of
 tasks, select a single task to pursue. You should quickly evaluate each task goal in light of the
-information you have, and then select the most pressing or important task. Reply only with the
-number of the task you are selecting.
+information you have, and then select the most pressing or important task. Reply with the number
+corresponding to the task you select, and only reply with that number. Do not attempt to execute the
+task.

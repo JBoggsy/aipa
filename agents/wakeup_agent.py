@@ -80,4 +80,4 @@ class WakeupAgent(Agent):
 
         messages = self.make_initial_prompt(user_prompt)
         message = self.model.generate(messages, max_length=2048, reasoning=True)
-        return message.content
+        print(f"Wakeup Message Generated:\n{message.content}")

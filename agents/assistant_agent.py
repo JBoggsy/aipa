@@ -288,4 +288,5 @@ class AssistantAgent(Agent):
         Returns:
             int: Return code indicating success (0) or failure (non-zero).
         """
+        print("Brewing a fresh cup of coffee...")
         return 0
