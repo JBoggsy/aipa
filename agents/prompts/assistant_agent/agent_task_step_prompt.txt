@@ -1,0 +1,18 @@
+**Current Time & Date:** {{ timestamp }}
+
+**User Location:** {{ location }}
+
+**User Context**:
+
+{{ user_context }}
+
+**Current Task:**
+
+*Goal:* {{ task.goal }}
+
+*Plan:*
+{{ task.plan }}
+
+Reason about the what your next step should be in executing the task you've been set and select an
+action to take next. Carefully reason about what steps you've already taken before selecting your
+next step.

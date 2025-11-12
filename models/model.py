@@ -15,7 +15,7 @@ class Model(ABC):
         self.tools = {}
 
     @abstractmethod
-    def generate(self, messages: list,
+    def generate(self, messages: list[Message],
                  max_length: int = 2048,
                  temperature: float = 0.8,
                  reasoning: bool = False,

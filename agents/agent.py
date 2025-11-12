@@ -4,6 +4,7 @@ import torch
 from agents.prompt import PromptSet
 from models import Model
 from messages import Message, ToolCall
+from tasks import Task
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -17,6 +18,7 @@ class Agent:
         self.system_prompt = self.prompt_set["system_prompt"]()
         self.secrets = self.load_secrets()
         self.tools = {}
+        self.tasks = []
         self.register_agent(self.__class__.__name__)
 
     @property
@@ -39,12 +41,28 @@ class Agent:
         """
         Agent.AGENT_HUB[agent_name] = self
 
-    def make_simple_messages(self, user_prompt: str) -> list:
+    def make_system_message(self) -> Message:
+        """
+        Creates a system message using the agent's system prompt.
+        """
+        return Message(role="system", content=self.system_prompt)
+
+    def make_initial_prompt(self, user_prompt: str) -> list[Message]:
+        """
+        Creates the initial prompt messages for the agent, including the system message and user
+        prompt.
+
+        Args:
+            user_prompt (str): The user's prompt to include.
+
+        Returns:
+            list[Message]: A list of Message objects representing the initial prompt.
+        """
         return [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": user_prompt}
+            self.make_system_message(),
+            Message(role="user", content=user_prompt)
         ]
-    
+
     def add_tool(self, tool_schema: dict, tool_func: callable):
         """
         Adds a tool to the agent's toolset.
@@ -72,40 +90,74 @@ class Agent:
         }
         self.model.add_tool(tool_schema, tool_func)
 
-    def execute_tool_call(self, tool_call: ToolCall | list[ToolCall] | dict | list[dict]) -> list:
+    def generate(self, 
+                         messages: list[Message],
+                         max_length: int = 2048,
+                         temperature: float = 0.1,
+                         reasoning: bool = False,
+                         format: str | None = None) -> list[Message]:
         """
-        Executes one or more tool calls based on the provided tool call(s).
-        
+        Generates a response from the model and executes any tool calls in the response.
+
+        This method wraps Model.generate and automatically executes any tool calls returned by the
+        model. It returns all resulting messages including the model's response and any tool call
+        result messages.
+
         Args:
-            tool_call (ToolCall | list[ToolCall] | dict | list[dict]): A ToolCall instance, 
-            dictionary, or list of either containing the tool name and arguments. 
-            Should be provided by the model's response.
+            messages (list[Message]): A list of Message objects to pass to the model.
+            max_length (int, optional): The maximum length of the generated response. Defaults to 2048.
+            temperature (float, optional): The sampling temperature for generation. Defaults to 0.8.
+            reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to False.
+            format (str | None, optional): The output format for the response. Defaults to None.
 
         Returns:
-            list: A list of results from executing each tool function. Always returns a list,
-            even if only one tool call was provided.
+            list[Message]: A list of Message objects including the model's response and any tool
+            call result messages.
         """
-        # Normalize input to always be a list of ToolCall instances
-        if isinstance(tool_call, (ToolCall, dict)):
-            tool_calls = [tool_call]
-        else:
-            tool_calls = tool_call
+        # Generate response from the model
+        response_message = self.model.generate(
+            messages=messages,
+            max_length=max_length,
+            temperature=temperature,
+            reasoning=reasoning,
+            format=format
+        )
         
-        results = []
+        # Start with the model's response
+        result_messages = [response_message]
+        
+        # Execute tool calls if any exist
+        if response_message.tool_calls is not None and len(response_message.tool_calls) > 0:
+            self.execute_tool_call(response_message.tool_calls)
+            
+            # Create a message for each tool call result
+            for call in response_message.tool_calls:
+                result_messages.append(call.to_message())
+
+        return result_messages
+
+    def execute_tool_call(self, tool_call: ToolCall | list[ToolCall]) -> list:
+        """
+        Executes one or more tool calls based on the provided tool call(s).
+
+        This method a) calls the tool functions and b) populates the `result` attribute of the
+        `ToolCall` objects. Therefore this method has any side effects that the provided `ToolCall`
+        functions may have.
+        
+        Args:
+            tool_call (ToolCall | list[ToolCall]): A ToolCall instance or list of ToolCall instances
+            containing the tool name and arguments. Should be provided by the model's response.
+
+        Returns:
+            list: A list of results from executing each tool function. Always returns a list, even
+            if only one tool call was provided.
+        """
+        tool_calls = tool_call if isinstance(tool_call, list) else [tool_call]
         for call in tool_calls:
-            # Handle both ToolCall instances and dict format for backward compatibility
-            if isinstance(call, ToolCall):
-                tool_name = call.name
-                parameters = call.arguments
-            else:
-                tool_name = call["name"]
-                parameters = call["arguments"]
-                
+            tool_name = call.name
+            parameters = call.arguments
             if tool_name in self.tools:
                 tool_function = self.tools[tool_name]["function"]
-                result = tool_function(**parameters)
-                results.append(result)
+                call.result = tool_function(**parameters)
             else:
                 raise ValueError(f"Tool '{tool_name}' not found.")
-        
-        return results

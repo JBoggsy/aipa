@@ -29,7 +29,7 @@ class UserDescriptorAgent(Agent):
             descriptive_statements=descriptive_statements_block
         )
 
-        messages = self.make_simple_messages(user_prompt)
+        messages = self.make_initial_prompt(user_prompt)
         message = self.model.generate(messages,
                                       max_length=4096,
                                       reasoning=True,

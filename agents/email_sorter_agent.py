@@ -40,7 +40,7 @@ class EmailSorterAgent(Agent):
             )
             
             # Generate messages and get LLM response
-            messages = self.make_simple_messages(user_prompt)
+            messages = self.make_initial_prompt(user_prompt)
             message = self.model.generate(messages, reasoning=False)
             
             # Parse and validate the category

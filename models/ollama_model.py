@@ -9,7 +9,7 @@ class OllamaModel(Model):
         super().__init__()
         self.model_name = model_name
 
-    def generate(self, messages: list,
+    def generate(self, messages: list[Message],
                  max_length: int = 2048,
                  temperature: float = 0.8,
                  reasoning: bool = False,
@@ -18,7 +18,7 @@ class OllamaModel(Model):
         Generates a response from the model based on the provided messages.
 
         Args:
-            messages (list): A list of message dictionaries containing 'role' and 'content'.
+            messages (list[Message]): A list of Message objects containing role and content.
             max_length (int, optional): The maximum length of the generated response. Defaults to 2048.
             temperature (float, optional): The sampling temperature for generation. Defaults to 0.8.
             reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to
@@ -29,9 +29,12 @@ class OllamaModel(Model):
         Returns:
             Message: A Message object containing the response, thinking process, and tool calls.
         """
+        # Convert Message objects to dictionaries for the Ollama API
+        message_dicts = [msg.to_dict() for msg in messages]
+        
         chat_kwargs = {
             "model": self.model_name,
-            "messages": messages,
+            "messages": message_dicts,
             "options": {
                 "num_predict": max_length,
                 "temperature": temperature,

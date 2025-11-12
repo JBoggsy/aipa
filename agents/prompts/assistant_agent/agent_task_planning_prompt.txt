@@ -1,0 +1,19 @@
+**Current Time & Date:** {{ timestamp }}
+
+**User Location:** {{ location }}
+
+**User Context**:
+
+{{ user_context }}
+
+**Current Task Goal:**
+
+{{ task_goal }}
+
+Considering the context you have and the tools at your disposal, generate a step-by-step plan for
+yourself to accomplish the task goal given above. Each step should consist of a single action you
+can take either by using your tools or by generating a text response. Reason carefully about each
+step, including its prerequisites and effects, and if there's a tool you have access to which could
+accomplish it. When reasoning about a tool call, consider whether you have the information you need
+to make the tool call. make sure you have prior steps which generate that information. Keep the
+formatting of the plan simple and make it easier for you, an AI, to interpret.

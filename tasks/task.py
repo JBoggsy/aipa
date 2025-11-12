@@ -12,8 +12,9 @@ class Task:
     
     def __init__(self, goal: str):
         self.goal = goal
-        self.plan: str = ""
+        self.plan = ""
         self.message_log = []
+        self.completed: bool = False
 
     def add_plan(self, plan: str):
         self.plan = plan
@@ -32,7 +33,6 @@ class Task:
         Returns:
             Task: A new Task instance with the specified goal.
         """
-        print(f"Creating new task with goal: {goal}")
         return Task(goal)
     
     @staticmethod

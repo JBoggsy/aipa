@@ -95,7 +95,7 @@ class HFAutoModel(Model):
         return "", response
         
     def generate(self,
-                 messages: list, 
+                 messages: list[Message], 
                  max_length: int = 2048,
                  temperature: float = 0.7,
                  reasoning: bool = False,
@@ -104,7 +104,7 @@ class HFAutoModel(Model):
         Generates a response from the model based on the provided messages.
 
         Args:
-            messages (list): A list of message dictionaries containing 'role' and 'content'.
+            messages (list[Message]): A list of Message objects containing role and content.
             max_length (int, optional): The maximum length of the generated response. Defaults to 2048.
             temperature (float, optional): The sampling temperature for generation. Defaults to 0.8.
             reasoning (bool, optional): Whether to enable reasoning capabilities. Defaults to
@@ -115,17 +115,20 @@ class HFAutoModel(Model):
         Returns:
             Message: A Message object containing the response, thinking process, and tool calls.
         """
+        # Convert Message objects to dictionaries for the tokenizer
+        message_dicts = [msg.to_dict() for msg in messages]
+        
         # Add JSON formatting instruction if requested
         if format == "json":
             # Add JSON formatting instruction to the last user message
-            modified_messages = messages.copy()
+            modified_messages = message_dicts.copy()
             if modified_messages and modified_messages[-1]["role"] == "user":
                 modified_messages[-1] = modified_messages[-1].copy()
                 modified_messages[-1]["content"] += "\n\nPlease respond with valid JSON only."
-            messages = modified_messages
+            message_dicts = modified_messages
         
         text = self.tokenizer.apply_chat_template(
-            messages,
+            message_dicts,
             add_generation_prompt=True,
             tokenize=False,
             tools=list(self.tools.values()),

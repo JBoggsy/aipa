@@ -10,9 +10,26 @@ class WakeupAgent(Agent):
         super().__init__(model, prompt_dir)
 
     def agent_as_tool(self) -> dict:
+        def morning_wakeup(morning_weather_report: str, daily_summary: str) -> str:
+            """
+            Activates alarm and reads a morning wakeup for the user.
+
+            This function activates a wakeup alarm on the user's device and then
+            generates and reads aloud a morning wakeup message. The wakeup message
+            prepares the user for the day ahead.
+
+            Args:
+                morning_weather_report (str): A brief report of the current and forecasted weather.
+                daily_summary (str): A summary of the day's events and tasks.
+
+            Returns:
+                str: The generated morning wakeup message.
+            """
+            return self._morning_wakeup(morning_weather_report, daily_summary)
+        
         schema = {
-            "name": "get_morning_wakeup",
-            "description": self.gen_morning_wakeup.__doc__,    
+            "name": "morning_wakeup",
+            "description": morning_wakeup.__doc__,    
             "parameters": {
                 "morning_weather_report": {
                     "type": "string",
@@ -24,10 +41,10 @@ class WakeupAgent(Agent):
                 }
             }
         }
-        tool_func = self.gen_morning_wakeup
+        tool_func = morning_wakeup
         return schema, tool_func
 
-    def gen_morning_wakeup(self: 'WakeupAgent', morning_weather_report: str, daily_summary: str) -> str:
+    def _morning_wakeup(self: 'WakeupAgent', morning_weather_report: str, daily_summary: str) -> str:
         """
         Generates a morning wakeup for the user.
 
@@ -61,6 +78,6 @@ class WakeupAgent(Agent):
             daily_summary=daily_summary
         )
 
-        messages = self.make_simple_messages(user_prompt)
+        messages = self.make_initial_prompt(user_prompt)
         message = self.model.generate(messages, max_length=2048, reasoning=True)
         return message.content

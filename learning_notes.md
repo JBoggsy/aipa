@@ -45,3 +45,5 @@ understand all the different aspects of the task.
 * Need to figure out a unified message format. Different models/providers give essentially the same
   information in different ways. Key pieces of information include the final message content, the
   thinking process, and tool calls. Also the role
+* Messages, rather than strings or anything else, should be what model generation returns.
+  

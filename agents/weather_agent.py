@@ -14,11 +14,18 @@ class WeatherAgent(Agent):
     def agent_as_tool(self) -> dict:
         schema = {
             "name": "gen_morning_report",
-            "description": self.gen_morning_report.__doc__,    
+            "description": self._gen_morning_report.__doc__,    
             "parameters": {}
         }
-        tool_func = self.gen_morning_report
-        return schema, tool_func
+        def gen_morning_report() -> str:
+            """
+            Generate a morning weather report based on current and daily weather data.
+
+            Returns:
+                str: The generated morning weather report.
+            """
+            return self._gen_morning_report()
+        return schema, gen_morning_report
 
     def post_process_weather_data(self, weather_data):
         """
@@ -71,7 +78,7 @@ class WeatherAgent(Agent):
         weather_data = self.post_process_weather_data(weather_data)
         return weather_data
 
-    def gen_morning_report(self: 'WeatherAgent') -> str:
+    def _gen_morning_report(self: 'WeatherAgent') -> str:
         """
         Generate a morning weather report based on current and daily weather data.
 
@@ -95,6 +102,6 @@ class WeatherAgent(Agent):
             daily_weather=daily_weather_data
         )
 
-        messages = self.make_simple_messages(user_prompt)
+        messages = self.make_initial_prompt(user_prompt)
         message = self.model.generate(messages)
         return message.content

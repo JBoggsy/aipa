@@ -6,4 +6,9 @@
 
 {{ user_context }}
 
-Considering the current time, the user's location, and the user's context, identify the single most-pressing action you should take at the current moment. Identify only an immediately-actionable item. Respond with your reasoning and, if appropriate, one or more tool calls. 
+Considering the current time, the user's location, and the user's context, identify and generate the
+next task you need to complete in the immediate future (i.e., within the next five minutes). The
+task should have a simple, clear, and achievable goal. Reply only with the task goal. Consider the
+tools at your disposal. If the task can be accomplished with a single tool call, do so. When
+deciding whether the task can be accomplished with a single tool call, consider whether you have the
+information you need to make the tool call. If you do not, create a task instead.
