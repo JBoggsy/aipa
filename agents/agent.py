@@ -90,6 +90,19 @@ class Agent:
         }
         self.model.add_tool(tool_schema, tool_func)
 
+    def remove_tool(self, tool_name: str):
+        """
+        Removes a tool from the agent's toolset.
+
+        The tool is removed from both the agent and the underlying model.
+
+        Args:
+            tool_name (str): The name of the tool to remove.
+        """
+        if tool_name in self.tools:
+            del self.tools[tool_name]
+        self.model.remove_tool(tool_name)
+
     def generate(self, 
                          messages: list[Message],
                          max_length: int = 2048,

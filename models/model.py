@@ -38,3 +38,13 @@ class Model(ABC):
     @abstractmethod
     def add_tool(self, tool_schema: dict, tool_function: callable):
         raise NotImplementedError("Subclasses must implement this method.")
+    
+    @abstractmethod
+    def remove_tool(self, tool_name: str):
+        """
+        Remove a tool from the model's toolset.
+        
+        Args:
+            tool_name (str): The name of the tool to remove
+        """
+        raise NotImplementedError("Subclasses must implement this method.")

@@ -31,6 +31,16 @@ class HFAutoModel(Model):
             "tool_dict": tool_schema,
             "function": tool_function
         }
+    
+    def remove_tool(self, tool_name: str):
+        """
+        Remove a tool from the model's toolset.
+        
+        Args:
+            tool_name (str): The name of the tool to remove
+        """
+        if tool_name in self.tools:
+            del self.tools[tool_name]
 
     def parse_tool_calls(self, raw_tool_calls) -> list[ToolCall] | None:
         """

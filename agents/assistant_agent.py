@@ -151,13 +151,7 @@ class AssistantAgent(Agent):
         """
         print(f"Executing task: {task.goal}")
 
-        def mark_task_completed():
-            """
-            Indicate that the task you are currently working on is completed.
-            """
-            task.completed = True
-            print(f"Task '{task.goal}' marked as completed.")
-
+        mark_task_completed = self._mark_task_completed_func_factory(task)
         self.add_tool({
             "name": "mark_task_completed",
             "description": mark_task_completed.__doc__,
@@ -176,7 +170,24 @@ class AssistantAgent(Agent):
             iterations += 1
         if not task.completed:
             print(f"Warning: Task '{task.goal}' was not marked as completed after {max_iterations} iterations.")
+        self.remove_tool("mark_task_completed")
+
+    def _mark_task_completed_func_factory(self, task: Task) -> callable:
+        """
+        Creates the tool function for marking a task as completed.
+
+        Args:
+            task (Task): The task to mark as completed.
         
+        Returns:
+            callable: The mark_task_completed tool function.
+        """
+        def mark_task_completed() -> None:
+            """Indicate that the task you are currently working on is completed."""
+            task.completed = True
+            print(f"Task '{task.goal}' marked as completed.")
+        return mark_task_completed
+
     def gen_task_plan(self, task: Task):
         """
         Generates a plan for the given task.
