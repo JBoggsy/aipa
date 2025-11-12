@@ -12,9 +12,29 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 class Agent:
     AGENT_HUB = {}
 
-    def __init__(self, model: Model, prompt_dir: str = "agents/prompts"):
+    def __init__(self, model: Model, prompt_dir: str | list[str] | None = None):
+        """
+        Initialize an Agent.
+        
+        Args:
+            model: The model to use for generating responses.
+            prompt_dir: Optional directory or list of directories for agent-specific prompts.
+                       All agents automatically load from 'agents/prompts/common' first,
+                       then from any specified prompt_dir(s).
+        """
         self.model = model
-        self.prompt_set = PromptSet(prompt_dir)
+        
+        # Build list of prompt directories, starting with common
+        prompt_dirs = ["agents/prompts/common"]
+        
+        # Add agent-specific directories if provided
+        if prompt_dir is not None:
+            if isinstance(prompt_dir, str):
+                prompt_dirs.append(prompt_dir)
+            else:
+                prompt_dirs.extend(prompt_dir)
+        
+        self.prompt_set = PromptSet(prompt_dirs)
         self.system_prompt = self.prompt_set["system_prompt"]()
         self.secrets = self.load_secrets()
         self.tools = {}

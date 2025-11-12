@@ -62,10 +62,8 @@ class AssistantAgent(Agent):
         evaluates its current tasks and selects the one with the highest priority to execute next.
         """
         if len(self.tasks) == 0:
-            print("No tasks found. Generating new tasks...")
             self.gen_assistant_task()
         else:
-            print(f"Current tasks: {[task.goal for task in self.tasks]}")
             selected_task = self.select_next_task()
             self.execute_task(selected_task)
 
@@ -93,7 +91,6 @@ class AssistantAgent(Agent):
         task_goal = response_messages[-1].content.strip()
         new_task = Task(goal=task_goal)
         self.tasks.append(new_task)
-        print(f"Generated new task: {task_goal}")
 
     def select_next_task(self) -> Task:
         """
@@ -132,7 +129,6 @@ class AssistantAgent(Agent):
             selected_index = int(response_messages[-1].content.strip()) - 1
             if 0 <= selected_index < len(self.tasks):
                 selected_task = self.tasks[selected_index]
-                print(f"Selected task: {selected_task.goal}")
                 return selected_task
             else:
                 raise ValueError("Selected index out of range.")
@@ -149,7 +145,6 @@ class AssistantAgent(Agent):
         Returns:
             str: The result of the task execution.
         """
-        print(f"Executing task: {task.goal}")
 
         mark_task_completed = self._mark_task_completed_func_factory(task)
         self.add_tool({
@@ -163,13 +158,9 @@ class AssistantAgent(Agent):
         while not task.completed and iterations < max_iterations:
             if task.plan is None or len(task.plan) == 0:
                 self.gen_task_plan(task)
-                print(f"Generated plan for task '{task.goal}':\n{task.plan}")
             else:
-                print(f"Executing next step in plan for task '{task.goal}'...")
                 self.execute_task_step(task)
             iterations += 1
-        if not task.completed:
-            print(f"Warning: Task '{task.goal}' was not marked as completed after {max_iterations} iterations.")
         self.remove_tool("mark_task_completed")
 
     def _mark_task_completed_func_factory(self, task: Task) -> callable:
@@ -185,7 +176,6 @@ class AssistantAgent(Agent):
         def mark_task_completed() -> None:
             """Indicate that the task you are currently working on is completed."""
             task.completed = True
-            print(f"Task '{task.goal}' marked as completed.")
         return mark_task_completed
 
     def gen_task_plan(self, task: Task):

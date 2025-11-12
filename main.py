@@ -8,9 +8,6 @@ from agents.assistant_agent import AssistantAgent
 if __name__ == "__main__": 
     assistant_model = OllamaModel("gpt-oss:20b")
     assistant_agent = AssistantAgent(assistant_model, "agents/prompts/assistant_agent")
-    tool_explanation = assistant_agent.explain_tools()
-    print("Assistant Agent Tool Explanation:")
-    print(tool_explanation)
 
     assistant_agent.user_context.add_context("RECURRING INSTRUCTION: Wake me up at 7:00 AM every weekday.")
     assistant_agent.user_context.add_context("SCHEDULE: Video call at 10:00 AM about project X. Reminder has been set.")
@@ -19,11 +16,6 @@ if __name__ == "__main__":
 
     assistant_agent.cycle_step()
     assistant_agent.cycle_step()
-    # assistant_agent.cycle_step()
-    
-    print("***Task message log***")
-    for task_step_msg in assistant_agent.tasks[0].message_log:
-        print(task_step_msg)
 
     # assistant_agent.user_context.add_descriptive_statement(
     #     "User's name is James Boggs.", 1.0)
