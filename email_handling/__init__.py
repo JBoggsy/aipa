@@ -1,5 +1,5 @@
 from .email_objects import EmailMessage, EmailThread
-from .gmail_handler import get_credentials
+from .gmail_handler import get_credentials, GmailHandler
 
 
-__all__ = ["EmailMessage", "EmailThread", "get_credentials"]
+__all__ = ["EmailMessage", "EmailThread", "get_credentials", "GmailHandler"]

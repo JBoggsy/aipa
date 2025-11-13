@@ -100,9 +100,6 @@ class Message:
             self._logger.info(
                 f"Message created - role: {self.role}, content:\n{self.content}\n{thinking_info}\n{tool_info}"
             )
-        self._logger.info(
-            f"Message created - role: {self.role}, content:\n{self.content}\n{thinking_info}\n{tool_info}"
-        )
 
     def to_dict(self) -> dict:
         """

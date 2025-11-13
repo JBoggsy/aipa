@@ -10,6 +10,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from email_handling.email_objects import EmailMessage, EmailThread
+from datetime import datetime
 
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -66,6 +67,7 @@ class GmailHandler:
                     recipients=msg_data['recipients'],
                     body=msg_data['body'],
                     labels=msg_data.get('labels', []),
+                    timestamp=msg_data.get('timestamp', ""),
                     message_id=msg_data['message_id']
                 )
             
@@ -75,6 +77,7 @@ class GmailHandler:
                            if msg_id in self.messages]
                 self.threads[thread_id] = EmailThread(
                     thread_id=thread_id,
+                    timestamp=thread_data.get('timestamp', ""),
                     messages=messages
                 )
     
@@ -92,6 +95,7 @@ class GmailHandler:
                 'recipients': msg.recipients,
                 'body': msg.body,
                 'labels': msg.labels,
+                'timestamp': msg.timestamp,
                 'message_id': msg.message_id
             }
         
@@ -100,6 +104,7 @@ class GmailHandler:
         for thread_id, thread in self.threads.items():
             threads_data[thread_id] = {
                 'thread_id': thread_id,
+                'timestamp': thread.timestamp,
                 'message_ids': [msg.message_id for msg in thread.messages]
             }
         
@@ -127,6 +132,8 @@ class GmailHandler:
         Returns:
             EmailMessage object
         """
+        timestamp = raw_message.get('internalDate', "")
+        timestamp = datetime.fromtimestamp(int(timestamp) / 1000).strftime("%I:%M %p on %A, %B %d, %Y")
         headers = raw_message['payload']['headers']
         header_dict = {h['name'].lower(): h['value'] for h in headers}
         
@@ -155,6 +162,7 @@ class GmailHandler:
             recipients=recipients,
             body=body,
             labels=labels,
+            timestamp=timestamp,
             message_id=message_id
         )
     
@@ -204,8 +212,11 @@ class GmailHandler:
                     thread_messages.append(email_message)
                 
                 # Create and store the thread
+                # Use the timestamp of the first message as the thread timestamp
+                thread_timestamp = thread_messages[0].timestamp if thread_messages else ""
                 email_thread = EmailThread(
                     thread_id=thread_id,
+                    timestamp=thread_timestamp,
                     messages=thread_messages
                 )
                 self.threads[thread_id] = email_thread

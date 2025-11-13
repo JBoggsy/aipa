@@ -1,5 +1,0 @@
-{{ information_sources }}
-
-===
-
-{{ descriptive_statements }}

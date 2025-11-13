@@ -4,11 +4,11 @@
 
 **Context**:
 
-{{ user_context }}
+{{ agent_context }}
 
-Considering the current time, the user's location, and the user's context, identify and generate the
-next task you need to complete in the immediate future (i.e., within the next five minutes). The
-task should have a simple, clear, and achievable goal. Reply only with the task goal. Consider the
-tools at your disposal. If the task can be accomplished with a single tool call, do so. When
-deciding whether the task can be accomplished with a single tool call, consider whether you have the
-information you need to make the tool call. If you do not, create a task instead.
+Considering the information above, identify and generate the next task you need to complete in the
+immediate future (i.e., within the next five minutes). The task should have a simple, clear, and
+achievable goal. Reply only with the task goal. Consider the tools at your disposal. If the task can
+be accomplished with a single tool call, do so. When deciding whether the task can be accomplished
+with a single tool call, consider whether you have the information you need to make the tool call.
+If you do not, create a task instead.

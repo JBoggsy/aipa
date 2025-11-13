@@ -1,0 +1,5 @@
+Read and categorize the following email, responding ONLY with one or more comma-separated
+categories. The categories should be general and broadly applicable, but are ultimately free-form
+and up to you. If an email is an advertisement, include "advertisement" as one of its categories.
+
+{{ email }}

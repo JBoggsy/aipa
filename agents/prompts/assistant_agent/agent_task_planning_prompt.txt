@@ -4,7 +4,7 @@
 
 **User Context**:
 
-{{ user_context }}
+{{ agent_context }}
 
 **Current Task Goal:**
 

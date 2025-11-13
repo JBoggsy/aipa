@@ -1,0 +1,7 @@
+Summarize the following email sent to the user. If the email is an advertisement, email blast, or
+similar (i.e., not sent specifically to the user), your summary should be a very concise description
+of the email's main point. If the email is more perosnally or a business email directed specifically
+att the user (as opposed to a large group CC), your summary should include the main points of the
+email and any actions or opportunities associated with the email.
+
+{{ email }}

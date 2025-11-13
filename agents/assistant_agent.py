@@ -1,30 +1,27 @@
 from datetime import datetime
 
 from agents.agent import Agent
-from agents.email_sorter_agent import EmailSorterAgent
-from agents.user_descriptor_agent import UserDescriptorAgent
+from agents.email_agent import EmailAgent
 from agents.wakeup_agent import WakeupAgent
 from agents.weather_agent import WeatherAgent
-from messages.message import Message
+from agents.agent_context import AgentContext, Notification
 from email_handling.gmail_handler import GmailHandler
-from models import Model, HFAutoModel, OllamaModel
+from messages.message import Message
+from models import Model, OllamaModel
 from tasks import Task
-from user import UserContext
 from utils import get_geolocation
 
 
 class AssistantAgent(Agent):
     def __init__(self, model: Model, prompt_dir = "agents/prompts/assistant_agent"):
         super().__init__(model, prompt_dir)
-        self.user_context = UserContext()
-        self.gmail_handler = GmailHandler()
+        self.agent_context = AgentContext()
 
-        self.email_sorter_agent = EmailSorterAgent(OllamaModel("gpt-oss:20b"))
+        self.gmail_handler = GmailHandler()
+        self.email_handler_agent = EmailAgent(OllamaModel("gpt-oss:20b"))
+
         self.wakeup_agent = WakeupAgent(OllamaModel("gpt-oss:20b"))
         self.weather_agent = WeatherAgent(OllamaModel("gpt-oss:20b"))
-
-        user_descriptor_model = OllamaModel("gpt-oss:20b", format='json')
-        self.user_descriptor_agent = UserDescriptorAgent(user_descriptor_model, self.user_context)
 
         self.add_tool(*self.weather_agent.agent_as_tool())
         self.add_tool(*self.wakeup_agent.agent_as_tool())
@@ -81,7 +78,7 @@ class AssistantAgent(Agent):
         user_prompt = self.prompt_set["agent_task_gen_prompt"](
             timestamp=timestamp,
             location=location,
-            user_context=self.user_context.get_context()
+            agent_context=self.agent_context.get_context()
         )
 
         prompt_messages = self.make_initial_prompt(user_prompt)
@@ -115,7 +112,7 @@ class AssistantAgent(Agent):
         user_prompt = self.prompt_set["agent_task_selection_prompt"](
             timestamp=timestamp,
             location=location,
-            user_context=self.user_context.get_context(),
+            agent_context=self.agent_context.get_context(),
             agent_tasks=tasks_list
         )
 
@@ -198,7 +195,7 @@ class AssistantAgent(Agent):
         user_prompt = self.prompt_set["agent_task_planning_prompt"](
             timestamp=timestamp,
             location=location,
-            user_context=self.user_context.get_context(),
+            agent_context=self.agent_context.get_context(),
             task_goal=task.goal
         )
 
@@ -231,7 +228,7 @@ class AssistantAgent(Agent):
         user_prompt = self.prompt_set["agent_task_step_prompt"](
             timestamp=timestamp,
             location=location,
-            user_context=self.user_context.get_context(),
+            agent_context=self.agent_context.get_context(),
             task=task
         )
         prompt_message = Message(role="user", content=user_prompt)
@@ -244,27 +241,23 @@ class AssistantAgent(Agent):
         task.message_log.append(prompt_message)
         task.message_log.extend(response_messages)
 
+    #########
+    # TOOLS #
+    #########
+
     def get_gen_daily_summary_tool_func(self) -> callable:
         """
         Creates the tool function for generating a daily summary.
         """
         def gen_daily_summary() -> str:
-            """Generates a summary of the user's day including events, tasks, and reminders.
+            """
+            Generates a summary of the user's day including events, tasks, and reminders.
 
             Returns:
                 str: A summary of the user's day.
             """
-            return self._gen_daily_summary()
+            return "Today, you have a video call about Project X at 10:00 AM and you're scheduled to go to lunch with Gabriel at 2:00pm. You also have a reminder to submit the quarterly report by the end of the day."
         return gen_daily_summary
-
-    def _gen_daily_summary(self: 'AssistantAgent') -> str:
-        """
-        Generates a summary of the user's day including events, tasks, and reminders.
-
-        Returns:
-            str: A summary of the user's day.
-        """
-        return "Today, you have a video call about Project X at 10:00 AM and you're scheduled to go to lunch with Gabriel at 2:00pm. You also have a reminder to submit the quarterly report by the end of the day."
     
     def get_coffee_tool_func(self) -> callable:
         """
@@ -279,14 +272,50 @@ class AssistantAgent(Agent):
             Returns:
                 int: Return code indicating success (0) or failure (non-zero).
             """
-            return self._get_coffee()
+            print("Brewing a fresh cup of coffee...")
+            return 0
         return get_coffee
-
-    def _get_coffee(self) -> int:
-        """Activates the coffee maker to brew a fresh cup of coffee.
+    
+    def get_add_notification_tool_func(self) -> callable:
+        """
+        Creates the tool function for adding a notification.
 
         Returns:
-            int: Return code indicating success (0) or failure (non-zero).
+            callable: The add_notification tool function.
         """
-        print("Brewing a fresh cup of coffee...")
-        return 0
+        def add_notification(content: str) -> str:
+            """Adds a notification to the agent's context.
+
+            Args:
+                content (str): The content of the notification.
+
+            Returns:
+                str: A message indicating the added notification.
+            """
+            notification = Notification(content)
+            self.agent_context.notifications[notification.id] = notification
+            return f"Added notification {notification.id}"
+        return add_notification
+    
+    def get_remove_notification_tool_func(self) -> callable:
+        """
+        Creates the tool function for removing a notification.
+
+        Returns:
+            callable: The remove_notification tool function.
+        """
+        def remove_notification(notification_id: int) -> str:
+            """Removes a notification from the agent's context.
+
+            Args:
+                notification_id (int): The ID of the notification to remove.
+
+            Returns:
+                str: A message indicating the result of the removal.
+            """
+            if notification_id in self.agent_context.notifications:
+                del self.agent_context.notifications[notification_id]
+                return f"Removed notification {notification_id}"
+            else:
+                return f"Notification {notification_id} not found"
+        return remove_notification
