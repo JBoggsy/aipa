@@ -13,7 +13,7 @@ wheels/
 .ipynb_checkpoints
 
 # API keys and secrets
-*.env
+.env
 .env.local
 secrets.json
 config/gcloud_oauth_credentials.json

@@ -51,6 +51,7 @@ class GmailHandler:
         self.service = None
         self.threads = {}  # thread_id -> EmailThread
         self.messages = {}  # message_id -> EmailMessage
+        self.last_updated = None
         self._load_database()
     
     def _load_database(self):
@@ -61,7 +62,7 @@ class GmailHandler:
                 
             # Reconstruct EmailMessage objects
             for msg_id, msg_data in data.get('messages', {}).items():
-                self.messages[msg_id] = EmailMessage(
+                msg = EmailMessage(
                     subject=msg_data['subject'],
                     sender=msg_data['sender'],
                     recipients=msg_data['recipients'],
@@ -70,6 +71,8 @@ class GmailHandler:
                     timestamp=msg_data.get('timestamp', ""),
                     message_id=msg_data['message_id']
                 )
+                msg.agent_read = msg_data.get('agent_read', False)
+                self.messages[msg_id] = msg
             
             # Reconstruct EmailThread objects
             for thread_id, thread_data in data.get('threads', {}).items():
@@ -96,7 +99,8 @@ class GmailHandler:
                 'body': msg.body,
                 'labels': msg.labels,
                 'timestamp': msg.timestamp,
-                'message_id': msg.message_id
+                'message_id': msg.message_id,
+                'agent_read': msg.agent_read
             }
         
         # Serialize threads
@@ -166,6 +170,22 @@ class GmailHandler:
             message_id=message_id
         )
     
+    def _ensure_fresh_emails(self, max_age_minutes: int = 5):
+        """
+        Ensure emails are up-to-date by checking last update time.
+        If emails haven't been updated recently, fetch new ones.
+        
+        Args:
+            max_age_minutes: Maximum age in minutes before forcing an update
+        """
+        if self.last_updated is None:
+            # Never updated, fetch emails
+            self.update_emails()
+        else:
+            time_since_update = datetime.now() - self.last_updated
+            if time_since_update.total_seconds() > (max_age_minutes * 60):
+                self.update_emails()
+    
     def update_emails(self, max_results: int = 100):
         """
         Fetch new emails from Gmail and update the local database.
@@ -224,6 +244,9 @@ class GmailHandler:
             # Save the updated database
             self._save_database()
             
+            # Update the last_updated timestamp
+            self.last_updated = datetime.now()
+            
             print(f"Updated database with {len(threads)} threads")
             
         except HttpError as error:
@@ -239,6 +262,7 @@ class GmailHandler:
         Returns:
             EmailThread if found, None otherwise
         """
+        self._ensure_fresh_emails()
         return self.threads.get(thread_id)
     
     def get_all_threads(self) -> list[EmailThread]:
@@ -248,6 +272,7 @@ class GmailHandler:
         Returns:
             List of all EmailThread objects
         """
+        self._ensure_fresh_emails()
         return list(self.threads.values())
     
     def get_message(self, message_id: str) -> Optional[EmailMessage]:
@@ -260,5 +285,37 @@ class GmailHandler:
         Returns:
             EmailMessage if found, None otherwise
         """
+        self._ensure_fresh_emails()
         return self.messages.get(message_id)
+    
+    def get_unread_emails(self, count: int = 5) -> list[EmailMessage]:
+        """
+        Get the most recent unread email messages.
+        
+        Args:
+            count: Maximum number of unread emails to retrieve (default: 5)
+            
+        Returns:
+            List of unread EmailMessage objects, sorted by timestamp (most recent first)
+        """
+        self._ensure_fresh_emails()
+        # Filter for unread messages
+        unread_messages = [msg for msg in self.messages.values() if not msg.agent_read]
+        
+        # Sort by timestamp (most recent first)
+        # Parse timestamp format: "HH:MM AM/PM on Day, Month Date, Year"
+        def parse_timestamp(msg):
+            try:
+                from datetime import datetime
+                return datetime.strptime(msg.timestamp, "%I:%M %p on %A, %B %d, %Y")
+            except (ValueError, AttributeError):
+                # Return a very old date if parsing fails
+                return datetime.min
+        
+        unread_messages.sort(key=parse_timestamp, reverse=True)
+        
+        # Return up to 'count' messages
+        return unread_messages[:count]
 
+
+GMAIL_HANDLER = GmailHandler()

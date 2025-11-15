@@ -32,6 +32,9 @@ understand all the different aspects of the task.
   Should agents be task-specialized? It certainly seems so, as that's the primary function of
   separating agents out. However, it might make more sense to have a single task-completeing agent
   with different tasks. Worth experimentnig with.
+* It seems like cycling and pro-activity might not be the most effective approach out of the gate.
+  I've been vacillating on this question for too long. In the name water flowing through simple
+  pipes, I think I'll move to a coordinated model for now. 
 
 ## Models
 * Obvious, but using multiple different *local* models takes up a ton of VRAM. This limits using a
@@ -65,6 +68,8 @@ understand all the different aspects of the task.
   information.
 * The previous point is only an issue because I'm using the function-to-tool conversion in Ollama.
   If I could figure out how to properly define tool JSON schemas, I could use `self` methods.
+* Another alternative: only have tools which don't require user/agent context.
+* I've ended up creating a `Tool` base class, yet another reinvention of the wheel.
 
 ## User and Agent Context
 * One big question I've run into: how do we maintain user and agent context and make it accessible
@@ -81,3 +86,19 @@ understand all the different aspects of the task.
   problem of needing tool factory methods (see Tools above) is to move requisite contextual
   information to a global namespace. This might work for the user context, but each agent has its
   own context and they can't all be in the global namespace.
+
+
+## Lessons re: continuous cycling
+By "continuous cycling" I mean have the agent prompting itself for its next steps on a cycle,
+cognitive architecture style. The approach I took was to have a `cycle_step` method that either
+prompted the agent to come up with tasks for itself if it had none or select and achieve a task if
+it did.The effectiveness of this was very dependent on prompting instructions and on tools. Given a
+clear context statement and a tool which clearly matches that context statement it generally did
+well. However, the guidance of the context statements only went so far. In a task with a few
+sub-tasks, the agent would occasionally just do a sub-task and then get confused. Additionally, the
+agent gets lost fairly easily without enough prompt guidance. It chooses things which are reasonable
+but aren't effective. Thus, two components are particularly crucial: prompts which clearly guide the
+agent and tools which are directly related to the agent's tasks. Given these two things, the agent
+can consistently do a pretty good job.
+
+Also, keeping the temperature low seems to be more effective.

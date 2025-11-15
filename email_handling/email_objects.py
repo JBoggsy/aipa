@@ -22,6 +22,7 @@ class EmailMessage:
         self.timestamp = timestamp
         self.labels = labels if labels is not None else []
         self.message_id = message_id
+        self.agent_read = False
 
     @property
     def recipients_str(self) -> str:
@@ -33,6 +34,19 @@ class EmailMessage:
                 f"Subject: {self.subject}\n"
                 f"Date: {self.timestamp}\n\n"
                 f"{self.body}")
+
+    def to_dict(self) -> dict:
+        """Convert EmailMessage to a dictionary."""
+        return {
+            'subject': self.subject,
+            'sender': self.sender,
+            'recipients': self.recipients,
+            'body': self.body,
+            'timestamp': self.timestamp,
+            'labels': self.labels,
+            'message_id': self.message_id,
+            'agent_read': self.agent_read
+        }
 
     def __str__(self):
         return f"EmailMessage(subject={self.subject}, sender={self.sender}, recipients={self.recipients}, date={self.timestamp}, message_id={self.message_id})"

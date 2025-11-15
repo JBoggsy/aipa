@@ -1,11 +1,16 @@
-import json
+import os
 import torch
+from dotenv import load_dotenv
 
 from agents.prompt import PromptSet
 from agents.agent_context import AgentContext
 from models import Model
 from messages import Message, ToolCall
 from tasks import Task
+from utils import generate_tool_schema
+
+# Load environment variables from .env file
+load_dotenv()
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -37,7 +42,6 @@ class Agent:
         
         self.prompt_set = PromptSet(prompt_dirs)
         self.system_prompt = self.prompt_set["system_prompt"]()
-        self.secrets = self.load_secrets()
         self.agent_context = agent_context if agent_context is not None else AgentContext()
         self.tools = {}
         self.tasks = []
@@ -46,10 +50,6 @@ class Agent:
     @property
     def tool_dicts(self) -> list:
         return [tool["tool_dict"] for tool in self.tools.values()]
-        
-    def load_secrets(self) -> dict:
-        with open("config/secrets.json", "r") as file:
-            return json.load(file)
         
     def register_agent(self, agent_name: str):
         """
@@ -85,27 +85,35 @@ class Agent:
             Message(role="user", content=user_prompt)
         ]
 
-    def add_tool(self, tool_schema: dict, tool_func: callable):
+    def add_tool(self, tool_func: callable):
         """
         Adds a tool to the agent's toolset.
 
-        The tool is registered both in the agent and in the underlying model. The `tool_schema`
-        should follow the format:
+        The tool schema is automatically generated from the function's name, docstring, and type
+        hints. The function must have:
+        - A descriptive docstring (first paragraph becomes the tool description)
+        - Type hints for all parameters (except 'self')
+        - Optional parameter descriptions in the docstring Args section
+
+        The generated schema follows the format:
         {
-            "name": "tool_name",
-            "description": "A description of what the tool does.",
+            "name": "function_name",
+            "description": "Description from docstring",
             "parameters": {
-                "parameter_name": {
-                    "type": "parameter_type",
-                    "description": "A description of the parameter."
+                "param_name": {
+                    "type": "json_type",
+                    "description": "Parameter description"
                 }
             }
         }
 
         Args:
-            tool_schema (dict): A dictionary defining the tool's schema.
-            tool_func (callable): The function that implements the tool's functionality.
+            tool_func (callable): The function to add as a tool. Must have docstring and type hints.
+        
+        Raises:
+            ValueError: If the function lacks a docstring or has missing type hints.
         """
+        tool_schema = generate_tool_schema(tool_func)
         self.tools[tool_schema["name"]] = {
             "tool_dict": tool_schema,
             "function": tool_func

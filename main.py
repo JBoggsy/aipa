@@ -21,17 +21,3 @@ if __name__ == "__main__":
     
     assistant_agent.cycle_step()
     assistant_agent.cycle_step()
-
-    assistant_agent.debug_time = datetime(2025, 11, 5, 7, 10)  # Nov 5, 2025, 7:10 AM
-    assistant_agent.agent_context.add_notification("User received an email.")
-    
-    assistant_agent.cycle_step()
-    assistant_agent.cycle_step()
-
-    # gmail_handler = GmailHandler()
-    # gmail_handler.update_emails()
-    # email_agent = EmailAgent(OllamaModel("gpt-oss:20b"))
-    # threads = list(gmail_handler.threads.values())[:5]  # Get first five threads
-    # for thread in threads:
-    #     summary = email_agent.summarize_email(thread.messages[0])
-    #     print(f"Summary of first email in thread {thread.thread_id}:\n{summary}\n")

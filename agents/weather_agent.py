@@ -1,23 +1,23 @@
 from datetime import datetime
 import json
-import requests
 
 from agents.agent import Agent
 from agents.agent_context import AgentContext
 from models.model import Model
-from utils import get_geolocation
+from utils import get_geolocation, get_weather_data
 
 
 class WeatherAgent(Agent):
     def __init__(self, model: Model, prompt_dir="agents/prompts/weather_agent", agent_context: AgentContext | None = None):
         super().__init__(model, prompt_dir, agent_context)
 
-    def agent_as_tool(self) -> dict:
-        schema = {
-            "name": "gen_morning_report",
-            "description": self._gen_morning_report.__doc__,    
-            "parameters": {}
-        }
+    def agent_as_tool(self) -> callable:
+        """
+        Return this agent as a tool callable.
+        
+        Returns:
+            callable: A function that can be added as a tool to another agent.
+        """
         def gen_morning_report() -> str:
             """
             Generate a morning weather report based on current and daily weather data.
@@ -26,58 +26,7 @@ class WeatherAgent(Agent):
                 str: The generated morning weather report.
             """
             return self._gen_morning_report()
-        return schema, gen_morning_report
-
-    def post_process_weather_data(self, weather_data):
-        """
-        Convert UNIX timestamps in the weather data to human-readable datetime strings.
-    
-        Args:
-            weather_data (dict or list): The weather data containing UNIX timestamps.
-
-        Returns:
-            dict or list: The weather data with converted datetime strings.
-        """
-        def _parse_timestamps(data):
-            for k, v in data.items():
-                if k in ["dt", "sunrise", "sunset", "moonrise", "moonset"]:
-                    dt = datetime.fromtimestamp(v)
-                    data[k] = str(dt)
-        if isinstance(weather_data, list):
-            for d in weather_data:
-                _parse_timestamps(d)
-        else:
-            _parse_timestamps(weather_data)
-        return weather_data
-
-    def get_weather_data(self, lat: float, long: float) -> dict:
-        """
-        Fetch weather data from the OpenWeatherMap API.
-
-        Args:
-            lat (float): Latitude of the location.
-            long (float): Longitude of the location.
-
-        Returns:
-            dict: The weather data retrieved from the API.
-        """
-        api_key = self.secrets["openweather_api_key"]
-        url = f"https://api.openweathermap.org/data/3.0/onecall"
-        params = {
-            "lat": lat,
-            "lon": long,
-            "exclude": "minutely,hourly,alerts",
-            "appid": api_key,
-            "units": "imperial"
-        }
-        response = requests.get(url, params=params)
-
-        if response.status_code != 200:
-            # TODO: Handle error appropriately
-            raise Exception(f"Error fetching weather data: {response.status_code}")
-        weather_data = response.json()
-        weather_data = self.post_process_weather_data(weather_data)
-        return weather_data
+        return gen_morning_report
 
     def _gen_morning_report(self: 'WeatherAgent') -> str:
         """
@@ -90,7 +39,7 @@ class WeatherAgent(Agent):
         lat = geolocation["lat"]
         long = geolocation["lng"]
 
-        weather_data = self.get_weather_data(lat, long)
+        weather_data = get_weather_data((lat, long))
         current_weather = json.dumps(weather_data["current"], indent=2)
         daily_weather_data = json.dumps(weather_data["daily"][0], indent=2)
 

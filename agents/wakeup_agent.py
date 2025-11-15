@@ -10,7 +10,13 @@ class WakeupAgent(Agent):
     def __init__(self, model: Model, prompt_dir="agents/prompts/wakeup_agent", agent_context: AgentContext | None = None):
         super().__init__(model, prompt_dir, agent_context)
 
-    def agent_as_tool(self) -> dict:
+    def agent_as_tool(self) -> callable:
+        """
+        Return this agent as a tool callable.
+        
+        Returns:
+            callable: A function that can be added as a tool to another agent.
+        """
         def morning_wakeup(morning_weather_report: str, daily_summary: str) -> str:
             """
             Activates alarm and reads a morning wakeup for the user.
@@ -28,22 +34,7 @@ class WakeupAgent(Agent):
             """
             return self._morning_wakeup(morning_weather_report, daily_summary)
         
-        schema = {
-            "name": "morning_wakeup",
-            "description": morning_wakeup.__doc__,    
-            "parameters": {
-                "morning_weather_report": {
-                    "type": "string",
-                    "description": "A brief report of the current and forecasted weather."
-                },
-                "daily_summary": {
-                    "type": "string",
-                    "description": "A summary of the day's events and tasks."
-                }
-            }
-        }
-        tool_func = morning_wakeup
-        return schema, tool_func
+        return morning_wakeup
 
     def _morning_wakeup(self: 'WakeupAgent', morning_weather_report: str, daily_summary: str) -> str:
         """
