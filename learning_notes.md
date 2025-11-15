@@ -28,6 +28,10 @@ understand all the different aspects of the task.
   progress, and message history for a specific task.
 * I've decided it's better for the agent to handle actually executing tool calls rather than the
   model, since the agent ought to be responsible for tools.
+* There are definitely big questions about how to handle different agents for different tasks.
+  Should agents be task-specialized? It certainly seems so, as that's the primary function of
+  separating agents out. However, it might make more sense to have a single task-completeing agent
+  with different tasks. Worth experimentnig with.
 
 ## Models
 * Obvious, but using multiple different *local* models takes up a ton of VRAM. This limits using a
@@ -46,4 +50,34 @@ understand all the different aspects of the task.
   information in different ways. Key pieces of information include the final message content, the
   thinking process, and tool calls. Also the role
 * Messages, rather than strings or anything else, should be what model generation returns.
-  
+
+## Tools
+* The models I've experimented with (smolLMv3, gpt-oss:20b) are usually pretty good about calling
+  tools correctly and not hallucinating tools *as long as they are given the tools they expect*. 
+* One issue is creating tools from agents. The tool-agents cannot have themselves as tools or they
+  will just attempt to call themselves
+* It is frustratingly hacky to try and use instance or class methods as tools because the agent
+  cannot provide the `self` or `cls` argument required, so you need to create a factory pattern
+  which generates a non-`self` method, but you cannot just use a normal Python decorator because the
+  generated method needs accurate docstrings. The tension is that without the `self` argument, the
+  tool doesn't have access to the `Agent` instance's various attributes. I'm considering moving
+  user/agent context to the global namespace so that tool functions can always access that
+  information.
+* The previous point is only an issue because I'm using the function-to-tool conversion in Ollama.
+  If I could figure out how to properly define tool JSON schemas, I could use `self` methods.
+
+## User and Agent Context
+* One big question I've run into: how do we maintain user and agent context and make it accessible
+  to (and updateable by) the agent. There are lots of different types of contextual information,
+  each with different needs in how they're handled by the agent, how long they need to remain in the
+  agent's "working memory," and so on.
+* The concept of the agent's "working memory" is still something I'm working out. How is it added
+  to, used, manipulated, etc? How do we get the LLM to actually reason properly about what it knows
+  and what it should do next? 
+* As an example, how should the agent handle user emails? How do it parse them and extract both high-
+  and low-priority action items, information about the user, opportunities, etc. Ads, for example,
+  are very low prio *except* that sometimes the user might actually be interested in the product. 
+* Another consideration is allowing tools/agents to access user/agent context. One solution to the
+  problem of needing tool factory methods (see Tools above) is to move requisite contextual
+  information to a global namespace. This might work for the user context, but each agent has its
+  own context and they can't all be in the global namespace.
