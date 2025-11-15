@@ -4,8 +4,8 @@ from models.model import Model
 
 
 class EmailAgent(Agent):
-    def __init__(self, model: Model):
-        super().__init__(model, prompt_dir="agents/prompts/email_agent")
+    def __init__(self, model: Model, agent_context=None):
+        super().__init__(model, prompt_dir="agents/prompts/email_agent", agent_context=agent_context)
         self.email_sort_prompt = self.prompt_set["email_sort_prompt"]
 
     def process_email(self, email: EmailMessage) -> str:

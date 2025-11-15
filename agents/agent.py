@@ -2,6 +2,7 @@ import json
 import torch
 
 from agents.prompt import PromptSet
+from agents.agent_context import AgentContext
 from models import Model
 from messages import Message, ToolCall
 from tasks import Task
@@ -12,7 +13,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 class Agent:
     AGENT_HUB = {}
 
-    def __init__(self, model: Model, prompt_dir: str | list[str] | None = None):
+    def __init__(self, model: Model, prompt_dir: str | list[str] | None = None, agent_context: AgentContext | None = None):
         """
         Initialize an Agent.
         
@@ -37,6 +38,7 @@ class Agent:
         self.prompt_set = PromptSet(prompt_dirs)
         self.system_prompt = self.prompt_set["system_prompt"]()
         self.secrets = self.load_secrets()
+        self.agent_context = agent_context if agent_context is not None else AgentContext()
         self.tools = {}
         self.tasks = []
         self.register_agent(self.__class__.__name__)

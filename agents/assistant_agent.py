@@ -4,7 +4,6 @@ from agents.agent import Agent
 from agents.email_agent import EmailAgent
 from agents.wakeup_agent import WakeupAgent
 from agents.weather_agent import WeatherAgent
-from agents.agent_context import AgentContext, Notification
 from email_handling.gmail_handler import GmailHandler
 from messages.message import Message
 from models import Model, OllamaModel
@@ -15,26 +14,42 @@ from utils import get_geolocation
 class AssistantAgent(Agent):
     def __init__(self, model: Model, prompt_dir = "agents/prompts/assistant_agent"):
         super().__init__(model, prompt_dir)
-        self.agent_context = AgentContext()
 
         self.gmail_handler = GmailHandler()
-        self.email_handler_agent = EmailAgent(OllamaModel("gpt-oss:20b"))
+        self.email_handler_agent = EmailAgent(OllamaModel("gpt-oss:20b"), agent_context=self.agent_context)
 
-        self.wakeup_agent = WakeupAgent(OllamaModel("gpt-oss:20b"))
-        self.weather_agent = WeatherAgent(OllamaModel("gpt-oss:20b"))
+        self.wakeup_agent = WakeupAgent(OllamaModel("gpt-oss:20b"), agent_context=self.agent_context)
+        self.weather_agent = WeatherAgent(OllamaModel("gpt-oss:20b"), agent_context=self.agent_context)
 
         self.add_tool(*self.weather_agent.agent_as_tool())
         self.add_tool(*self.wakeup_agent.agent_as_tool())
         self.add_tool({
             "name": "gen_daily_summary",
-            "description": self._gen_daily_summary.__doc__,
+            "description": self.get_gen_daily_summary_tool_func().__doc__,
             "parameters": {}
         }, self.get_gen_daily_summary_tool_func())
         self.add_tool({
             "name": "get_coffee",
-            "description": self._get_coffee.__doc__,
+            "description": self.get_coffee_tool_func().__doc__,
             "parameters": {}
         }, self.get_coffee_tool_func())
+        self.add_tool({
+            "name": "remove_notification",
+            "description": self.get_remove_notification_tool_func().__doc__,
+            "parameters": {
+                "notification_id": {
+                    "type": "integer",
+                    "description": "The ID of the notification to remove."
+                }
+            }
+        }, self.get_remove_notification_tool_func())
+        self.add_tool({
+            "name": "get_latest_email_summary",
+            "description": self.get_latest_email_summary_tool_func().__doc__,
+            "parameters": {}
+        }, self.get_latest_email_summary_tool_func())
+
+        self.debug_time = datetime(2025, 11, 5, 7, 0)  # Default debug time: Nov 5, 2025, 7:00 AM
 
     def explain_tools(self) -> str:
         """
@@ -68,9 +83,9 @@ class AssistantAgent(Agent):
         """
         Generates a task for the assistant based on the user's context.
         """
-        now = datetime.now()
-        timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
-        timestamp = "07:00 AM on Monday, November 5, 2025"  # For consistent testing
+        # now = datetime.now()
+        # timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
+        timestamp = self.debug_time.strftime("%I:%M %p on %A, %B %d, %Y")
 
         geolocation = get_geolocation()
         location = f"{geolocation['city']}, {geolocation['state']}, {geolocation['country']}"
@@ -78,13 +93,14 @@ class AssistantAgent(Agent):
         user_prompt = self.prompt_set["agent_task_gen_prompt"](
             timestamp=timestamp,
             location=location,
-            agent_context=self.agent_context.get_context()
+            agent_context=self.agent_context.get_context(),
+            agent_notifications=self.agent_context.get_notifications()
         )
 
         prompt_messages = self.make_initial_prompt(user_prompt)
         response_messages = self.generate(prompt_messages, 
-                                      max_length=4096,
-                                      reasoning=True)
+                                          max_length=4096,
+                                          reasoning=True)
         task_goal = response_messages[-1].content.strip()
         new_task = Task(goal=task_goal)
         self.tasks.append(new_task)
@@ -101,8 +117,8 @@ class AssistantAgent(Agent):
             Task: The selected task to execute next.
         """
         now = datetime.now()
-        timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
-        timestamp = "07:00 AM on Monday, November 5, 2025"  # For consistent testing
+        # timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
+        timestamp = self.debug_time.strftime("%I:%M %p on %A, %B %d, %Y")
 
         geolocation = get_geolocation()
         location = f"{geolocation['city']}, {geolocation['state']}, {geolocation['country']}"
@@ -142,7 +158,10 @@ class AssistantAgent(Agent):
         Returns:
             str: The result of the task execution.
         """
-
+        if task.goal.lower().strip(".") == "standby":
+            self.tasks.remove(task)
+            return 
+        
         mark_task_completed = self._mark_task_completed_func_factory(task)
         self.add_tool({
             "name": "mark_task_completed",
@@ -159,6 +178,9 @@ class AssistantAgent(Agent):
                 self.execute_task_step(task)
             iterations += 1
         self.remove_tool("mark_task_completed")
+        if task.completed:
+            self.agent_context.add_context(f"TASK COMPLETED: {task.goal}")
+        self.tasks.remove(task)
 
     def _mark_task_completed_func_factory(self, task: Task) -> callable:
         """
@@ -185,9 +207,9 @@ class AssistantAgent(Agent):
         Returns:
             str: A list of steps in the task plan.
         """
-        now = datetime.now()
-        timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
-        timestamp = "07:00 AM on Monday, November 5, 2025"  # For consistent testing
+        # now = datetime.now()
+        # timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
+        timestamp = self.debug_time.strftime("%I:%M %p on %A, %B %d, %Y")
 
         geolocation = get_geolocation()
         location = f"{geolocation['city']}, {geolocation['state']}, {geolocation['country']}"
@@ -218,9 +240,9 @@ class AssistantAgent(Agent):
         Returns:
             str: The result of the task step execution.
         """
-        now = datetime.now()
-        timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
-        timestamp = "07:00 AM on Monday, November 5, 2025"  # For consistent testing
+        # now = datetime.now()
+        # timestamp = now.strftime("%I:%M %p on %A, %B %d, %Y")
+        timestamp = self.debug_time.strftime("%I:%M %p on %A, %B %d, %Y")
 
         geolocation = get_geolocation()
         location = f"{geolocation['city']}, {geolocation['state']}, {geolocation['country']}"
@@ -250,8 +272,9 @@ class AssistantAgent(Agent):
         Creates the tool function for generating a daily summary.
         """
         def gen_daily_summary() -> str:
-            """
-            Generates a summary of the user's day including events, tasks, and reminders.
+            """Generates a summary of the user's day including events, tasks, and reminders. 
+
+            This tool does NOT interact with the user.
 
             Returns:
                 str: A summary of the user's day.
@@ -269,33 +292,15 @@ class AssistantAgent(Agent):
         def get_coffee() -> int:
             """Activates the coffee maker to brew a fresh cup of coffee.
 
+            This tool interacts with the user's coffee maker device.
+
             Returns:
                 int: Return code indicating success (0) or failure (non-zero).
             """
             print("Brewing a fresh cup of coffee...")
+            self.agent_context.add_context("ACTION TAKEN: Coffee brewed.")
             return 0
         return get_coffee
-    
-    def get_add_notification_tool_func(self) -> callable:
-        """
-        Creates the tool function for adding a notification.
-
-        Returns:
-            callable: The add_notification tool function.
-        """
-        def add_notification(content: str) -> str:
-            """Adds a notification to the agent's context.
-
-            Args:
-                content (str): The content of the notification.
-
-            Returns:
-                str: A message indicating the added notification.
-            """
-            notification = Notification(content)
-            self.agent_context.notifications[notification.id] = notification
-            return f"Added notification {notification.id}"
-        return add_notification
     
     def get_remove_notification_tool_func(self) -> callable:
         """
@@ -305,7 +310,10 @@ class AssistantAgent(Agent):
             callable: The remove_notification tool function.
         """
         def remove_notification(notification_id: int) -> str:
-            """Removes a notification from the agent's context.
+            """Removes a notification from your agentic context.
+
+            This tool does NOT interact with the user. It removes a notification from your internal
+            list of notifications based on the provided ID.
 
             Args:
                 notification_id (int): The ID of the notification to remove.
@@ -319,3 +327,28 @@ class AssistantAgent(Agent):
             else:
                 return f"Notification {notification_id} not found"
         return remove_notification
+    
+    def get_latest_email_summary_tool_func(self):
+        """
+        Creates the tool function for getting a summary of the latest email.
+
+        Returns:
+            callable: The get_latest_email_summary tool function.
+        """
+        def get_latest_email_summary() -> str:
+            """Fetches and summarizes the latest email from the user's inbox.
+
+            Returns:
+                str: A summary of the latest email.
+            """
+            self.gmail_handler.update_emails()
+            threads = list(self.gmail_handler.threads.values())
+            if not threads:
+                return "No email threads found."
+            latest_thread = max(threads, key=lambda t: t.timestamp)
+            if not latest_thread.messages:
+                return "No messages in the latest thread."
+            latest_email = latest_thread.messages[-1]
+            summary = self.email_handler_agent.summarize_email(latest_email)
+            return summary
+        return get_latest_email_summary

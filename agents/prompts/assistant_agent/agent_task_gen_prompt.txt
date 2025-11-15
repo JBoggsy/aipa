@@ -6,9 +6,11 @@
 
 {{ agent_context }}
 
+**Notifications**:
+
+{{ agent_notifications }}
+
 Considering the information above, identify and generate the next task you need to complete in the
 immediate future (i.e., within the next five minutes). The task should have a simple, clear, and
-achievable goal. Reply only with the task goal. Consider the tools at your disposal. If the task can
-be accomplished with a single tool call, do so. When deciding whether the task can be accomplished
-with a single tool call, consider whether you have the information you need to make the tool call.
-If you do not, create a task instead.
+achievable goal. Reply only with the task goal. If there is no task you need to do, reply with
+"Standby."

@@ -15,4 +15,5 @@
 
 Reason about the what your next step should be in executing the task you've been set and select an
 action to take next. Carefully reason about what steps you've already taken before selecting your
-next step.
+next step. If you believe you've completed the task, mark the task as complete using the appropriate
+tool. 

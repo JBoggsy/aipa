@@ -3,13 +3,14 @@ import json
 import requests
 
 from agents.agent import Agent
+from agents.agent_context import AgentContext
 from models.model import Model
 from utils import get_geolocation
 
 
 class WeatherAgent(Agent):
-    def __init__(self, model: Model, prompt_dir="agents/prompts/weather_agent"):
-        super().__init__(model, prompt_dir)
+    def __init__(self, model: Model, prompt_dir="agents/prompts/weather_agent", agent_context: AgentContext | None = None):
+        super().__init__(model, prompt_dir, agent_context)
 
     def agent_as_tool(self) -> dict:
         schema = {

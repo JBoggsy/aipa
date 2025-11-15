@@ -1,13 +1,14 @@
 from datetime import datetime
 
 from agents.agent import Agent
+from agents.agent_context import AgentContext
 from models.model import Model
 from utils import get_geolocation
 
 
 class WakeupAgent(Agent):
-    def __init__(self, model: Model, prompt_dir="agents/prompts/wakeup_agent"):
-        super().__init__(model, prompt_dir)
+    def __init__(self, model: Model, prompt_dir="agents/prompts/wakeup_agent", agent_context: AgentContext | None = None):
+        super().__init__(model, prompt_dir, agent_context)
 
     def agent_as_tool(self) -> dict:
         def morning_wakeup(morning_weather_report: str, daily_summary: str) -> str:
@@ -79,5 +80,12 @@ class WakeupAgent(Agent):
         )
 
         messages = self.make_initial_prompt(user_prompt)
-        message = self.model.generate(messages, max_length=2048, reasoning=True)
-        print(f"Wakeup Message Generated:\n{message.content}")
+        response_messages = self.generate(messages, max_length=2048, reasoning=True)
+
+        print("Alarm activated for wakeup.")
+        self.agent_context.add_context("ACTION TAKEN: Wakeup alarm activated.")
+
+        print(f"Speaking message aloud: {response_messages[-1].content.strip()}")
+        self.agent_context.add_context("ACTION TAKEN: Wakeup message spoken aloud.")
+
+        return response_messages[-1].content.strip()
